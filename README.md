@@ -10,8 +10,9 @@ details, or right-click to refresh, toggle startup, open the diagnostic log
 folder, or exit.
 
 In the right-click menu, expand **Free resets available** to see the expiry
-date for each individual reset credit. The expiry list is informational only;
-the app never consumes a reset.
+date for each individual reset credit. Click an expiry row to open Codex
+Desktop's usage settings, where resets can be reviewed or used. The tray app
+itself never consumes a reset.
 
 ## How it gets the number
 

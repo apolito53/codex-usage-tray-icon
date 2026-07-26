@@ -351,14 +351,11 @@ namespace CodexUsageTray
                     : "unavailable";
 
                 _resetCreditsItem.DropDownItems.Add(
-                    new ToolStripMenuItem(
+                    CreateResetCreditMenuItem(
                         string.Format(
                             "Reset {0}: expires {1}",
                             index + 1,
-                            expiry))
-                    {
-                        Enabled = false
-                    });
+                            expiry)));
             }
 
             int knownCount = snapshot.AvailableResetCredits ?? snapshot.ResetCredits.Count;
@@ -369,17 +366,41 @@ namespace CodexUsageTray
             if (missingDetailCount > 0)
             {
                 _resetCreditsItem.DropDownItems.Add(
-                    new ToolStripMenuItem(
+                    CreateResetCreditMenuItem(
                         string.Format(
                             "{0} more reset{1}: expiry unavailable",
                             missingDetailCount,
-                            missingDetailCount == 1 ? string.Empty : "s"))
-                    {
-                        Enabled = false
-                    });
+                            missingDetailCount == 1 ? string.Empty : "s")));
             }
 
             _resetCreditsItem.Enabled = _resetCreditsItem.DropDownItems.Count > 0;
+        }
+
+        private ToolStripMenuItem CreateResetCreditMenuItem(string text)
+        {
+            var item = new ToolStripMenuItem(text)
+            {
+                ToolTipText = "Open Codex usage settings"
+            };
+            item.Click += OpenCodexUsageSettings;
+            return item;
+        }
+
+        private void OpenCodexUsageSettings(object sender, EventArgs args)
+        {
+            try
+            {
+                CodexNavigation.OpenUsageSettings();
+                AppLog.Info("Opened Codex usage settings from a reset credit.");
+            }
+            catch (Exception exception)
+            {
+                AppLog.Error("Could not open Codex usage settings.", exception);
+                ShowBalloon(
+                    "Could not open Codex",
+                    exception.Message,
+                    ToolTipIcon.Error);
+            }
         }
 
         private void ClearResetCreditMenu()

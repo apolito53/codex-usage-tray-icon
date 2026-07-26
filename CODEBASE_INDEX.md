@@ -14,6 +14,8 @@
 - `src/UsageSnapshot.cs` - small UI-facing usage model.
 - `src/ResetCreditSnapshot.cs` - read-only expiry data for one available reset
   credit; intentionally excludes opaque redemption identifiers.
+- `src/CodexNavigation.cs` - isolated `codex://` navigation into Codex Desktop's
+  usage settings.
 
 ## Windows integration
 

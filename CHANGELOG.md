@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.3.0 - 2026-07-26
+
+- Made each reset-expiry submenu row clickable.
+- Added a focused `codex://settings/usage` navigation boundary so clicking a
+  reset opens Codex Desktop's usage settings.
+- Kept navigation failures visible in the tray and diagnostic log.
+
 ## v0.1.2.0 - 2026-07-26
 
 - Turned the free-reset count into an expandable, read-only tray submenu.
