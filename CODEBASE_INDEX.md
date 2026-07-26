@@ -14,8 +14,9 @@
 - `src/UsageSnapshot.cs` - small UI-facing usage model.
 - `src/ResetCreditSnapshot.cs` - read-only expiry data for one available reset
   credit; intentionally excludes opaque redemption identifiers.
-- `src/CodexNavigation.cs` - isolated `codex://` navigation into Codex Desktop's
-  usage settings.
+- `src/CodexNavigation.cs` - opens Codex's supported Settings deep link, uses
+  Windows accessibility to select **Usage & billing**, and scrolls the reset
+  expiry list into view without invoking reset controls.
 
 ## Windows integration
 
@@ -38,5 +39,8 @@
   parsing isolated in `CodexUsageClient.cs`.
 - `NotifyIcon.Text` is limited to 63 characters on .NET Framework.
 - Windows may initially place a new tray icon in the notification overflow.
+- Codex does not currently expose its usage page as an external deep link, so
+  the final navigation step relies on English Windows accessibility labels and
+  degrades to the base Settings page if those labels change.
 - The project intentionally targets the Windows-provided C# 5 compiler, so do
   not introduce newer language syntax without changing the build foundation.

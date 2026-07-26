@@ -21,6 +21,16 @@ if (-not $compilerPath) {
     throw 'The .NET Framework C# compiler was not found. Install .NET Framework 4.8.'
 }
 
+$frameworkRoot = Split-Path -Parent $compilerPath
+$uiAutomationClientPath = Join-Path $frameworkRoot 'WPF\UIAutomationClient.dll'
+$uiAutomationTypesPath = Join-Path $frameworkRoot 'WPF\UIAutomationTypes.dll'
+
+foreach ($assemblyPath in @($uiAutomationClientPath, $uiAutomationTypesPath)) {
+    if (-not (Test-Path -LiteralPath $assemblyPath)) {
+        throw "Required Windows accessibility assembly not found: $assemblyPath"
+    }
+}
+
 $sourceFiles = Get-ChildItem -LiteralPath $sourceRoot -Filter '*.cs' -File |
     Sort-Object Name
 
@@ -47,7 +57,9 @@ $compilerArguments = @(
     '/reference:System.Core.dll',
     '/reference:System.Drawing.dll',
     '/reference:System.Windows.Forms.dll',
-    '/reference:System.Web.Extensions.dll'
+    '/reference:System.Web.Extensions.dll',
+    "/reference:$uiAutomationClientPath",
+    "/reference:$uiAutomationTypesPath"
 )
 
 $compilerArguments += $sourceFiles.FullName

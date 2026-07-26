@@ -11,8 +11,15 @@ folder, or exit.
 
 In the right-click menu, expand **Free resets available** to see the expiry
 date for each individual reset credit. Click an expiry row to open Codex
-Desktop's usage settings, where resets can be reviewed or used. The tray app
-itself never consumes a reset.
+Desktop's **Usage & billing** page and scroll the reset list into view. The
+tray app itself never consumes a reset.
+
+Codex does not currently expose **Usage & billing** as a public external deep
+link. The tray app opens Codex's supported Settings link, then uses Windows
+accessibility to invoke only the **Usage & billing** sidebar item and scroll an
+expiry label into view. It never searches for or invokes a **Use reset**
+button. If those accessibility labels change, Codex Settings still opens and
+the tray reports that the final navigation step needs to be done manually.
 
 ## How it gets the number
 
@@ -58,6 +65,9 @@ Requirements:
 - Windows 10 or 11
 - Codex Desktop installed and signed in with ChatGPT
 - .NET Framework 4.8
+
+The automatic jump from Settings to **Usage & billing** currently expects the
+English Codex interface.
 
 For an unusual Codex installation, set `CODEX_USAGE_TRAY_CODEX_PATH` to the
 full path of a usable `codex.exe`.

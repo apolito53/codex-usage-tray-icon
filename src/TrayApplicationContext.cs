@@ -23,6 +23,7 @@ namespace CodexUsageTray
         private UsageSnapshot _latestSnapshot;
         private Icon _currentIcon;
         private bool _refreshInProgress;
+        private bool _navigationInProgress;
         private bool _disposed;
         private string _lastError;
 
@@ -386,20 +387,64 @@ namespace CodexUsageTray
             return item;
         }
 
-        private void OpenCodexUsageSettings(object sender, EventArgs args)
+        private async void OpenCodexUsageSettings(object sender, EventArgs args)
         {
+            if (_navigationInProgress || _disposed)
+            {
+                return;
+            }
+
+            _navigationInProgress = true;
+
             try
             {
-                CodexNavigation.OpenUsageSettings();
-                AppLog.Info("Opened Codex usage settings from a reset credit.");
+                UsageNavigationResult result =
+                    await CodexNavigation.OpenUsageSettingsAsync();
+
+                if (_disposed)
+                {
+                    return;
+                }
+
+                if (result == UsageNavigationResult.UsageAndResetSection)
+                {
+                    AppLog.Info(
+                        "Opened Codex Usage & billing at the reset section.");
+                    return;
+                }
+
+                if (result == UsageNavigationResult.UsagePageOnly)
+                {
+                    AppLog.Info(
+                        "Opened Codex Usage & billing, but could not focus the reset section.");
+                    ShowBalloon(
+                        "Opened Usage & billing",
+                        "The reset list could not be focused automatically.",
+                        ToolTipIcon.Warning);
+                    return;
+                }
+
+                AppLog.Info(
+                    "Opened Codex Settings, but could not select Usage & billing.");
+                ShowBalloon(
+                    "Opened Codex Settings",
+                    "Choose Usage & billing from the sidebar.",
+                    ToolTipIcon.Warning);
             }
             catch (Exception exception)
             {
                 AppLog.Error("Could not open Codex usage settings.", exception);
-                ShowBalloon(
-                    "Could not open Codex",
-                    exception.Message,
-                    ToolTipIcon.Error);
+                if (!_disposed)
+                {
+                    ShowBalloon(
+                        "Could not open Codex",
+                        exception.Message,
+                        ToolTipIcon.Error);
+                }
+            }
+            finally
+            {
+                _navigationInProgress = false;
             }
         }
 

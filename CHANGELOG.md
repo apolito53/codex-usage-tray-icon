@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.1.3.1 - 2026-07-26
+
+- Replaced the unsupported `codex://settings/usage` link, which Codex currently
+  normalizes to General settings.
+- Opened Codex's supported Settings entry point, selected **Usage & billing**
+  through Windows accessibility, and scrolled the reset-expiry list into view.
+- Kept the automation deliberately read-only with respect to reset controls and
+  added a visible fallback when Codex's accessibility labels cannot be found.
+
 ## v0.1.3.0 - 2026-07-26
 
 - Made each reset-expiry submenu row clickable.
