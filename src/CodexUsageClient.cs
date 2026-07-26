@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -54,7 +55,7 @@ namespace CodexUsageTray
                     process,
                     "{\"id\":1,\"method\":\"initialize\",\"params\":{" +
                     "\"clientInfo\":{\"name\":\"codex-usage-tray\"," +
-                    "\"title\":\"Codex Usage Tray\",\"version\":\"0.1.1.0\"}," +
+                    "\"title\":\"Codex Usage Tray\",\"version\":\"0.1.2.0\"}," +
                     "\"capabilities\":{\"experimentalApi\":true}}}");
 
                 ReadResponse(process, 1);
@@ -208,6 +209,7 @@ namespace CodexUsageTray
             string limitName = ReadOptionalString(bucket, "limitName");
             bool isWeekly = selectedDuration >= (7 * 24 * 60) - 60;
             int? availableResetCredits = ReadAvailableResetCredits(result);
+            IList<ResetCreditSnapshot> resetCredits = ReadResetCreditDetails(result);
 
             return new UsageSnapshot(
                 usedPercent,
@@ -216,6 +218,7 @@ namespace CodexUsageTray
                 selectedDuration,
                 isWeekly,
                 availableResetCredits,
+                resetCredits,
                 limitId,
                 limitName,
                 DateTime.Now);
@@ -224,14 +227,7 @@ namespace CodexUsageTray
         private static int? ReadAvailableResetCredits(
             Dictionary<string, object> result)
         {
-            object summaryValue;
-            if (!result.TryGetValue("rateLimitResetCredits", out summaryValue) ||
-                summaryValue == null)
-            {
-                return null;
-            }
-
-            var summary = summaryValue as Dictionary<string, object>;
+            Dictionary<string, object> summary = ReadResetCreditSummary(result);
             if (summary == null)
             {
                 return null;
@@ -246,6 +242,82 @@ namespace CodexUsageTray
             }
 
             return Math.Max(0, count);
+        }
+
+        private static IList<ResetCreditSnapshot> ReadResetCreditDetails(
+            Dictionary<string, object> result)
+        {
+            var details = new List<ResetCreditSnapshot>();
+            Dictionary<string, object> summary = ReadResetCreditSummary(result);
+            if (summary == null)
+            {
+                return details;
+            }
+
+            object creditsValue;
+            if (!summary.TryGetValue("credits", out creditsValue) ||
+                creditsValue == null ||
+                creditsValue is string)
+            {
+                return details;
+            }
+
+            var credits = creditsValue as IEnumerable;
+            if (credits == null)
+            {
+                return details;
+            }
+
+            foreach (object creditValue in credits)
+            {
+                var credit = creditValue as Dictionary<string, object>;
+                if (credit == null)
+                {
+                    continue;
+                }
+
+                string status = ReadOptionalString(credit, "status");
+                if (!string.IsNullOrWhiteSpace(status) &&
+                    !status.Equals("available", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                long expiresAtUnix = ReadLong(credit, "expiresAt", 0);
+                DateTime? expiresAtLocal = expiresAtUnix > 0
+                    ? (DateTime?)UnixSecondsToLocalTime(expiresAtUnix)
+                    : null;
+
+                details.Add(new ResetCreditSnapshot(expiresAtLocal));
+            }
+
+            // Soonest-to-expire belongs first; credits without an expiry sort
+            // last so known dates stay immediately useful.
+            details.Sort(delegate(ResetCreditSnapshot left, ResetCreditSnapshot right)
+            {
+                if (left.ExpiresAtLocal.HasValue && right.ExpiresAtLocal.HasValue)
+                {
+                    return left.ExpiresAtLocal.Value.CompareTo(right.ExpiresAtLocal.Value);
+                }
+
+                if (left.ExpiresAtLocal.HasValue)
+                {
+                    return -1;
+                }
+
+                return right.ExpiresAtLocal.HasValue ? 1 : 0;
+            });
+
+            return details;
+        }
+
+        private static Dictionary<string, object> ReadResetCreditSummary(
+            Dictionary<string, object> result)
+        {
+            object summaryValue;
+            return result.TryGetValue("rateLimitResetCredits", out summaryValue)
+                ? summaryValue as Dictionary<string, object>
+                : null;
         }
 
         private static Dictionary<string, object> FindCodexBucket(

@@ -12,6 +12,8 @@
 - `src/CodexUsageClient.cs` - starts `codex app-server`, performs the JSON
   request handshake, and selects the longest/weekly Codex rate-limit window.
 - `src/UsageSnapshot.cs` - small UI-facing usage model.
+- `src/ResetCreditSnapshot.cs` - read-only expiry data for one available reset
+  credit; intentionally excludes opaque redemption identifiers.
 
 ## Windows integration
 
@@ -36,4 +38,3 @@
 - Windows may initially place a new tray icon in the notification overflow.
 - The project intentionally targets the Windows-provided C# 5 compiler, so do
   not introduce newer language syntax without changing the build foundation.
-

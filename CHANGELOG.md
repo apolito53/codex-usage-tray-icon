@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.2.0 - 2026-07-26
+
+- Turned the free-reset count into an expandable, read-only tray submenu.
+- Added one expiry row per returned reset credit, ordered by the soonest
+  expiration date.
+- Added an explicit fallback when the available count exceeds the detail rows
+  returned by Codex.
+
 ## v0.1.1.0 - 2026-07-26
 
 - Added the available free reset-credit count to the tray menu, hover tooltip,

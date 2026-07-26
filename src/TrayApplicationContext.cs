@@ -129,14 +129,15 @@ namespace CodexUsageTray
                 ApplySnapshot(snapshot);
                 AppLog.Info(
                     string.Format(
-                        "Usage refreshed: {0}% remaining; reset {1}; free resets {2}.",
+                        "Usage refreshed: {0}% remaining; reset {1}; free resets {2}; expiry details {3}.",
                         snapshot.RemainingPercent,
                         snapshot.ResetAtLocal.HasValue
                             ? snapshot.ResetAtLocal.Value.ToString("O")
                             : "unknown",
                         snapshot.AvailableResetCredits.HasValue
                             ? snapshot.AvailableResetCredits.Value.ToString()
-                            : "unknown"));
+                            : "unknown",
+                        snapshot.ResetCredits.Count));
             }
             catch (Exception exception)
             {
@@ -171,11 +172,7 @@ namespace CodexUsageTray
                 ? "Resets " + snapshot.ResetAtLocal.Value.ToString("ddd, MMM d 'at' h:mm tt")
                 : "Reset time unavailable";
 
-            _resetCreditsItem.Text = snapshot.AvailableResetCredits.HasValue
-                ? string.Format(
-                    "Free resets available: {0}",
-                    snapshot.AvailableResetCredits.Value)
-                : "Free reset count unavailable";
+            ApplyResetCreditMenu(snapshot);
 
             _checkedItem.Text = "Last checked " + snapshot.CheckedAtLocal.ToString("h:mm:ss tt");
 
@@ -197,7 +194,9 @@ namespace CodexUsageTray
         {
             _summaryItem.Text = "Codex usage unavailable";
             _resetItem.Text = FriendlyError(exception);
+            ClearResetCreditMenu();
             _resetCreditsItem.Text = "Free reset count unavailable";
+            _resetCreditsItem.Enabled = false;
             _checkedItem.Text = "Last attempt " + DateTime.Now.ToString("h:mm:ss tt");
             _notifyIcon.Text = TruncateTooltip("Codex usage unavailable - click for details");
             ReplaceIcon("!", Color.FromArgb(207, 34, 46));
@@ -331,6 +330,66 @@ namespace CodexUsageTray
                 "{0} free reset{1}",
                 availableResetCredits.Value,
                 availableResetCredits.Value == 1 ? string.Empty : "s");
+        }
+
+        private void ApplyResetCreditMenu(UsageSnapshot snapshot)
+        {
+            ClearResetCreditMenu();
+
+            _resetCreditsItem.Text = snapshot.AvailableResetCredits.HasValue
+                ? string.Format(
+                    "Free resets available: {0}",
+                    snapshot.AvailableResetCredits.Value)
+                : "Free reset count unavailable";
+
+            for (int index = 0; index < snapshot.ResetCredits.Count; index++)
+            {
+                ResetCreditSnapshot credit = snapshot.ResetCredits[index];
+                string expiry = credit.ExpiresAtLocal.HasValue
+                    ? credit.ExpiresAtLocal.Value.ToString(
+                        "ddd, MMM d 'at' h:mm tt")
+                    : "unavailable";
+
+                _resetCreditsItem.DropDownItems.Add(
+                    new ToolStripMenuItem(
+                        string.Format(
+                            "Reset {0}: expires {1}",
+                            index + 1,
+                            expiry))
+                    {
+                        Enabled = false
+                    });
+            }
+
+            int knownCount = snapshot.AvailableResetCredits ?? snapshot.ResetCredits.Count;
+            int missingDetailCount = Math.Max(
+                0,
+                knownCount - snapshot.ResetCredits.Count);
+
+            if (missingDetailCount > 0)
+            {
+                _resetCreditsItem.DropDownItems.Add(
+                    new ToolStripMenuItem(
+                        string.Format(
+                            "{0} more reset{1}: expiry unavailable",
+                            missingDetailCount,
+                            missingDetailCount == 1 ? string.Empty : "s"))
+                    {
+                        Enabled = false
+                    });
+            }
+
+            _resetCreditsItem.Enabled = _resetCreditsItem.DropDownItems.Count > 0;
+        }
+
+        private void ClearResetCreditMenu()
+        {
+            while (_resetCreditsItem.DropDownItems.Count > 0)
+            {
+                ToolStripItem detailItem = _resetCreditsItem.DropDownItems[0];
+                _resetCreditsItem.DropDownItems.RemoveAt(0);
+                detailItem.Dispose();
+            }
         }
 
         private static string FriendlyError(Exception exception)

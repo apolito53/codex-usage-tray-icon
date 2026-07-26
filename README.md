@@ -9,6 +9,10 @@ for a quick summary including available free resets, left-click for reset
 details, or right-click to refresh, toggle startup, open the diagnostic log
 folder, or exit.
 
+In the right-click menu, expand **Free resets available** to see the expiry
+date for each individual reset credit. The expiry list is informational only;
+the app never consumes a reset.
+
 ## How it gets the number
 
 Codex Usage Tray launches the locally installed Codex CLI app server and reads

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace CodexUsageTray
 {
@@ -11,6 +13,7 @@ namespace CodexUsageTray
             long windowDurationMinutes,
             bool isWeekly,
             int? availableResetCredits,
+            IList<ResetCreditSnapshot> resetCredits,
             string limitId,
             string limitName,
             DateTime checkedAtLocal)
@@ -21,6 +24,9 @@ namespace CodexUsageTray
             WindowDurationMinutes = windowDurationMinutes;
             IsWeekly = isWeekly;
             AvailableResetCredits = availableResetCredits;
+            ResetCredits = new ReadOnlyCollection<ResetCreditSnapshot>(
+                new List<ResetCreditSnapshot>(
+                    resetCredits ?? new List<ResetCreditSnapshot>()));
             LimitId = limitId;
             LimitName = limitName;
             CheckedAtLocal = checkedAtLocal;
@@ -41,6 +47,12 @@ namespace CodexUsageTray
         /// server did not provide a summary; zero is a real reported count.
         /// </summary>
         internal int? AvailableResetCredits { get; private set; }
+
+        /// <summary>
+        /// Individual expiry details can be shorter than AvailableResetCredits
+        /// when the backend caps or omits the detail list.
+        /// </summary>
+        internal IList<ResetCreditSnapshot> ResetCredits { get; private set; }
 
         internal string LimitId { get; private set; }
 
