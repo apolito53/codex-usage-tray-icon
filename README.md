@@ -24,7 +24,8 @@ tray and written to a small local log rather than silently showing stale data.
 From PowerShell:
 
 ```powershell
-cd C:\Users\apoli\projects\codex-usage-tray
+git clone https://github.com/apolito53/codex-usage-tray-icon.git
+cd codex-usage-tray-icon
 .\install.ps1
 ```
 
@@ -73,4 +74,3 @@ The rolling log is stored at:
 
 The app refreshes immediately on launch and every five minutes afterward.
 Manual refresh is available from the right-click menu.
-
