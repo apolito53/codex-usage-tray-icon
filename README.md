@@ -5,8 +5,9 @@ where it belongs: beside the clock instead of buried in a menu.
 
 The tray icon shows the percentage of the weekly Codex allowance remaining.
 Its color shifts from green to amber to red as the allowance gets low. Hover
-for a quick summary, left-click for reset details, or right-click to refresh,
-toggle startup, open the diagnostic log folder, or exit.
+for a quick summary including available free resets, left-click for reset
+details, or right-click to refresh, toggle startup, open the diagnostic log
+folder, or exit.
 
 ## How it gets the number
 

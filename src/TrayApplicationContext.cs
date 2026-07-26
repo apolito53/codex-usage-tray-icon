@@ -15,6 +15,7 @@ namespace CodexUsageTray
         private readonly Timer _refreshTimer;
         private readonly ToolStripMenuItem _summaryItem;
         private readonly ToolStripMenuItem _resetItem;
+        private readonly ToolStripMenuItem _resetCreditsItem;
         private readonly ToolStripMenuItem _checkedItem;
         private readonly ToolStripMenuItem _refreshItem;
         private readonly ToolStripMenuItem _startupItem;
@@ -37,6 +38,10 @@ namespace CodexUsageTray
             {
                 Enabled = false
             };
+            _resetCreditsItem = new ToolStripMenuItem("Free resets: loading…")
+            {
+                Enabled = false
+            };
             _checkedItem = new ToolStripMenuItem("Last checked: —")
             {
                 Enabled = false
@@ -56,6 +61,7 @@ namespace CodexUsageTray
             var menu = new ContextMenuStrip();
             menu.Items.Add(_summaryItem);
             menu.Items.Add(_resetItem);
+            menu.Items.Add(_resetCreditsItem);
             menu.Items.Add(_checkedItem);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(_refreshItem);
@@ -123,10 +129,13 @@ namespace CodexUsageTray
                 ApplySnapshot(snapshot);
                 AppLog.Info(
                     string.Format(
-                        "Usage refreshed: {0}% remaining; reset {1}.",
+                        "Usage refreshed: {0}% remaining; reset {1}; free resets {2}.",
                         snapshot.RemainingPercent,
                         snapshot.ResetAtLocal.HasValue
                             ? snapshot.ResetAtLocal.Value.ToString("O")
+                            : "unknown",
+                        snapshot.AvailableResetCredits.HasValue
+                            ? snapshot.AvailableResetCredits.Value.ToString()
                             : "unknown"));
             }
             catch (Exception exception)
@@ -162,11 +171,18 @@ namespace CodexUsageTray
                 ? "Resets " + snapshot.ResetAtLocal.Value.ToString("ddd, MMM d 'at' h:mm tt")
                 : "Reset time unavailable";
 
+            _resetCreditsItem.Text = snapshot.AvailableResetCredits.HasValue
+                ? string.Format(
+                    "Free resets available: {0}",
+                    snapshot.AvailableResetCredits.Value)
+                : "Free reset count unavailable";
+
             _checkedItem.Text = "Last checked " + snapshot.CheckedAtLocal.ToString("h:mm:ss tt");
 
             string tooltip = string.Format(
-                "Codex: {0}% left - reset {1}",
+                "Codex: {0}% left - {1} - reset {2}",
                 snapshot.RemainingPercent,
+                FormatResetCredits(snapshot.AvailableResetCredits),
                 snapshot.ResetAtLocal.HasValue
                     ? snapshot.ResetAtLocal.Value.ToString("ddd h:mm tt")
                     : "unknown");
@@ -181,6 +197,7 @@ namespace CodexUsageTray
         {
             _summaryItem.Text = "Codex usage unavailable";
             _resetItem.Text = FriendlyError(exception);
+            _resetCreditsItem.Text = "Free reset count unavailable";
             _checkedItem.Text = "Last attempt " + DateTime.Now.ToString("h:mm:ss tt");
             _notifyIcon.Text = TruncateTooltip("Codex usage unavailable - click for details");
             ReplaceIcon("!", Color.FromArgb(207, 34, 46));
@@ -199,14 +216,21 @@ namespace CodexUsageTray
                     ? "Resets " + _latestSnapshot.ResetAtLocal.Value.ToString(
                         "dddd, MMMM d 'at' h:mm tt")
                     : "Reset time unavailable";
+                string resetCreditsText = _latestSnapshot.AvailableResetCredits.HasValue
+                    ? string.Format(
+                        "{0} free reset{1} available",
+                        _latestSnapshot.AvailableResetCredits.Value,
+                        _latestSnapshot.AvailableResetCredits.Value == 1 ? string.Empty : "s")
+                    : "Free reset count unavailable";
 
                 ShowBalloon(
                     "Codex weekly usage",
                     string.Format(
-                        "{0}% left ({1}% used)\n{2}",
+                        "{0}% left ({1}% used)\n{2}\n{3}",
                         _latestSnapshot.RemainingPercent,
                         _latestSnapshot.UsedPercent,
-                        resetText),
+                        resetText,
+                        resetCreditsText),
                     ToolTipIcon.Info);
             }
             else
@@ -294,6 +318,19 @@ namespace CodexUsageTray
             }
 
             return Color.FromArgb(207, 34, 46);
+        }
+
+        private static string FormatResetCredits(int? availableResetCredits)
+        {
+            if (!availableResetCredits.HasValue)
+            {
+                return "resets unknown";
+            }
+
+            return string.Format(
+                "{0} free reset{1}",
+                availableResetCredits.Value,
+                availableResetCredits.Value == 1 ? string.Empty : "s");
         }
 
         private static string FriendlyError(Exception exception)

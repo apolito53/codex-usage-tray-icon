@@ -28,7 +28,19 @@ Get-CimInstance Win32_Process -Filter "Name = 'CodexUsageTray.exe'" |
             [System.StringComparison]::OrdinalIgnoreCase)
     } |
     ForEach-Object {
-        Stop-Process -Id $_.ProcessId -Force
+        $processId = $_.ProcessId
+        Stop-Process -Id $processId -Force
+
+        # Wait for the image lock to disappear before removing the installed
+        # files. This mirrors the safe in-place update path in install.ps1.
+        $exitDeadline = [DateTime]::UtcNow.AddSeconds(5)
+        while (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
+            if ([DateTime]::UtcNow -ge $exitDeadline) {
+                throw "The installed tray process did not exit within five seconds."
+            }
+
+            Start-Sleep -Milliseconds 100
+        }
     }
 
 $runKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($runKeyPath, $true)
@@ -64,4 +76,3 @@ Write-Host 'Codex Usage Tray was uninstalled.'
 if (-not $PurgeLogs) {
     Write-Host "Logs were preserved at $logRoot"
 }
-

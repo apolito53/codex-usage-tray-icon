@@ -54,7 +54,7 @@ namespace CodexUsageTray
                     process,
                     "{\"id\":1,\"method\":\"initialize\",\"params\":{" +
                     "\"clientInfo\":{\"name\":\"codex-usage-tray\"," +
-                    "\"title\":\"Codex Usage Tray\",\"version\":\"0.1.0.0\"}," +
+                    "\"title\":\"Codex Usage Tray\",\"version\":\"0.1.1.0\"}," +
                     "\"capabilities\":{\"experimentalApi\":true}}}");
 
                 ReadResponse(process, 1);
@@ -207,6 +207,7 @@ namespace CodexUsageTray
             string limitId = ReadOptionalString(bucket, "limitId");
             string limitName = ReadOptionalString(bucket, "limitName");
             bool isWeekly = selectedDuration >= (7 * 24 * 60) - 60;
+            int? availableResetCredits = ReadAvailableResetCredits(result);
 
             return new UsageSnapshot(
                 usedPercent,
@@ -214,9 +215,37 @@ namespace CodexUsageTray
                 resetAtLocal,
                 selectedDuration,
                 isWeekly,
+                availableResetCredits,
                 limitId,
                 limitName,
                 DateTime.Now);
+        }
+
+        private static int? ReadAvailableResetCredits(
+            Dictionary<string, object> result)
+        {
+            object summaryValue;
+            if (!result.TryGetValue("rateLimitResetCredits", out summaryValue) ||
+                summaryValue == null)
+            {
+                return null;
+            }
+
+            var summary = summaryValue as Dictionary<string, object>;
+            if (summary == null)
+            {
+                return null;
+            }
+
+            object countValue;
+            int count;
+            if (!summary.TryGetValue("availableCount", out countValue) ||
+                !TryConvertInt(countValue, out count))
+            {
+                return null;
+            }
+
+            return Math.Max(0, count);
         }
 
         private static Dictionary<string, object> FindCodexBucket(
@@ -426,4 +455,3 @@ namespace CodexUsageTray
         }
     }
 }
-

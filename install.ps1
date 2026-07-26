@@ -32,7 +32,19 @@ Get-CimInstance Win32_Process -Filter "Name = 'CodexUsageTray.exe'" |
             [System.StringComparison]::OrdinalIgnoreCase)
     } |
     ForEach-Object {
-        Stop-Process -Id $_.ProcessId -Force
+        $processId = $_.ProcessId
+        Stop-Process -Id $processId -Force
+
+        # Stop-Process can return before Windows releases the executable
+        # image. Wait briefly so an in-place update cannot race Copy-Item.
+        $exitDeadline = [DateTime]::UtcNow.AddSeconds(5)
+        while (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
+            if ([DateTime]::UtcNow -ge $exitDeadline) {
+                throw "The installed tray process did not exit within five seconds."
+            }
+
+            Start-Sleep -Milliseconds 100
+        }
     }
 
 New-Item -ItemType Directory -Path $installRoot -Force | Out-Null
@@ -65,4 +77,3 @@ if ($NoStartup) {
 else {
     Write-Host 'Start with Windows: on'
 }
-

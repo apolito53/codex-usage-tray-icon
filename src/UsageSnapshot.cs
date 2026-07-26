@@ -10,6 +10,7 @@ namespace CodexUsageTray
             DateTime? resetAtLocal,
             long windowDurationMinutes,
             bool isWeekly,
+            int? availableResetCredits,
             string limitId,
             string limitName,
             DateTime checkedAtLocal)
@@ -19,6 +20,7 @@ namespace CodexUsageTray
             ResetAtLocal = resetAtLocal;
             WindowDurationMinutes = windowDurationMinutes;
             IsWeekly = isWeekly;
+            AvailableResetCredits = availableResetCredits;
             LimitId = limitId;
             LimitName = limitName;
             CheckedAtLocal = checkedAtLocal;
@@ -33,6 +35,12 @@ namespace CodexUsageTray
         internal long WindowDurationMinutes { get; private set; }
 
         internal bool IsWeekly { get; private set; }
+
+        /// <summary>
+        /// Free full-reset credits reported by Codex. A null value means the
+        /// server did not provide a summary; zero is a real reported count.
+        /// </summary>
+        internal int? AvailableResetCredits { get; private set; }
 
         internal string LimitId { get; private set; }
 
