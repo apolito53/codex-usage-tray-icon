@@ -9,6 +9,12 @@ for a quick summary including available free resets, left-click for reset
 details, or right-click to refresh, toggle startup, open the diagnostic log
 folder, or exit.
 
+If a refresh cannot reach Codex, the last successful percentage, reset time,
+and reset-credit details stay visible as a stale reading. The tray icon gains a
+red offline badge, the menu and tooltip say **OFFLINE**, and the app retries
+after one minute, then backs off to two and five minutes during a longer
+outage.
+
 In the right-click menu, expand **Free resets available** to see the expiry
 date for each individual reset credit. Click an expiry row to open Codex
 Desktop's **Usage & billing** page and scroll the reset list into view. The
@@ -30,7 +36,8 @@ Codex. The app does not store a password, session token, or API key.
 The app-server command is currently marked experimental by Codex. The usage
 method is present in the protocol shipped with the installed desktop app, but a
 future Codex update could rename or reshape it. Errors are kept visible in the
-tray and written to a small local log rather than silently showing stale data.
+tray and written to a small local log. A stale reading is always labeled as
+offline rather than being passed off as current.
 
 ## Install
 

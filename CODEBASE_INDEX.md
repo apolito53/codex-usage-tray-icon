@@ -20,7 +20,8 @@
 
 ## Windows integration
 
-- `src/TrayIconRenderer.cs` - dynamically renders the colored percentage icon.
+- `src/TrayIconRenderer.cs` - dynamically renders the large colored percentage
+  icon and its stale/offline badge.
 - `src/StartupRegistration.cs` - manages the current-user Run registry value.
 - `src/AppLog.cs` - bounded local diagnostic logging without raw server
   payloads or credentials.
@@ -38,6 +39,10 @@
 - The Codex app-server protocol is currently experimental. Keep raw protocol
   parsing isolated in `CodexUsageClient.cs`.
 - `NotifyIcon.Text` is limited to 63 characters on .NET Framework.
+- A failed refresh keeps the last successful snapshot in memory, labels it
+  stale/offline, and retries after one minute with a two- then five-minute
+  backoff. A fresh process with no successful snapshot still shows the hard
+  unavailable state.
 - Windows may initially place a new tray icon in the notification overflow.
 - Codex does not currently expose its usage page as an external deep link, so
   the final navigation step relies on English Windows accessibility labels and

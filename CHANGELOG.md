@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.4.0 - 2026-07-29
+
+- Kept the last successful usage, reset time, and reset-credit details visible
+  when a refresh fails.
+- Added explicit stale/offline labels, a red tray-icon badge, and one-minute
+  retries that back off to five minutes while the connection is down.
+- Enlarged one-, two-, and three-digit tray-icon text for better legibility.
+
 ## v0.1.3.1 - 2026-07-26
 
 - Replaced the unsupported `codex://settings/usage` link, which Codex currently

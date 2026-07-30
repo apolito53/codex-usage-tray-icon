@@ -9,6 +9,8 @@ namespace CodexUsageTray
     internal sealed class TrayApplicationContext : ApplicationContext
     {
         private const int RefreshIntervalMilliseconds = 5 * 60 * 1000;
+        private const int OfflineRetryIntervalMilliseconds = 60 * 1000;
+        private const int SecondOfflineRetryIntervalMilliseconds = 2 * 60 * 1000;
 
         private readonly CodexUsageClient _usageClient;
         private readonly NotifyIcon _notifyIcon;
@@ -16,7 +18,7 @@ namespace CodexUsageTray
         private readonly ToolStripMenuItem _summaryItem;
         private readonly ToolStripMenuItem _resetItem;
         private readonly ToolStripMenuItem _resetCreditsItem;
-        private readonly ToolStripMenuItem _checkedItem;
+        private readonly ToolStripMenuItem _statusItem;
         private readonly ToolStripMenuItem _refreshItem;
         private readonly ToolStripMenuItem _startupItem;
 
@@ -26,6 +28,7 @@ namespace CodexUsageTray
         private bool _navigationInProgress;
         private bool _disposed;
         private string _lastError;
+        private int _consecutiveRefreshFailures;
 
         internal TrayApplicationContext()
         {
@@ -43,7 +46,7 @@ namespace CodexUsageTray
             {
                 Enabled = false
             };
-            _checkedItem = new ToolStripMenuItem("Last checked: —")
+            _statusItem = new ToolStripMenuItem("Connection: loading…")
             {
                 Enabled = false
             };
@@ -63,7 +66,7 @@ namespace CodexUsageTray
             menu.Items.Add(_summaryItem);
             menu.Items.Add(_resetItem);
             menu.Items.Add(_resetCreditsItem);
-            menu.Items.Add(_checkedItem);
+            menu.Items.Add(_statusItem);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(_refreshItem);
             menu.Items.Add(_startupItem);
@@ -115,7 +118,18 @@ namespace CodexUsageTray
 
             _refreshInProgress = true;
             _refreshItem.Enabled = false;
-            _summaryItem.Text = "Codex usage: refreshing…";
+            if (_latestSnapshot == null)
+            {
+                _summaryItem.Text = "Codex usage: refreshing…";
+                _statusItem.Text = "Connecting…";
+            }
+            else
+            {
+                _summaryItem.Text = FormatUsageSummary(
+                    _latestSnapshot,
+                    " - checking…");
+                _statusItem.Text = "Checking connection…";
+            }
 
             try
             {
@@ -127,6 +141,7 @@ namespace CodexUsageTray
 
                 _latestSnapshot = snapshot;
                 _lastError = null;
+                _consecutiveRefreshFailures = 0;
                 ApplySnapshot(snapshot);
                 AppLog.Info(
                     string.Format(
@@ -148,6 +163,7 @@ namespace CodexUsageTray
                 }
 
                 _lastError = exception.Message;
+                _consecutiveRefreshFailures++;
                 ApplyError(exception);
                 AppLog.Error("Usage refresh failed.", exception);
             }
@@ -163,11 +179,7 @@ namespace CodexUsageTray
 
         private void ApplySnapshot(UsageSnapshot snapshot)
         {
-            string windowLabel = snapshot.IsWeekly ? "weekly" : "longest-window";
-            _summaryItem.Text = string.Format(
-                "Codex: {0}% {1} left",
-                snapshot.RemainingPercent,
-                windowLabel);
+            _summaryItem.Text = FormatUsageSummary(snapshot, string.Empty);
 
             _resetItem.Text = snapshot.ResetAtLocal.HasValue
                 ? "Resets " + snapshot.ResetAtLocal.Value.ToString("ddd, MMM d 'at' h:mm tt")
@@ -175,7 +187,9 @@ namespace CodexUsageTray
 
             ApplyResetCreditMenu(snapshot);
 
-            _checkedItem.Text = "Last checked " + snapshot.CheckedAtLocal.ToString("h:mm:ss tt");
+            _statusItem.Text =
+                "Online - updated " +
+                snapshot.CheckedAtLocal.ToString("h:mm:ss tt");
 
             string tooltip = string.Format(
                 "Codex: {0}% left - {1} - reset {2}",
@@ -189,16 +203,47 @@ namespace CodexUsageTray
             ReplaceIcon(
                 snapshot.RemainingPercent.ToString(),
                 GetUsageColor(snapshot.RemainingPercent));
+            SetRefreshTimerInterval(RefreshIntervalMilliseconds);
         }
 
         private void ApplyError(Exception exception)
         {
+            int retryInterval = GetOfflineRetryIntervalMilliseconds();
+            SetRefreshTimerInterval(retryInterval);
+
+            if (_latestSnapshot != null)
+            {
+                _summaryItem.Text = FormatUsageSummary(
+                    _latestSnapshot,
+                    " - STALE");
+                _statusItem.Text = string.Format(
+                    "OFFLINE - showing {0} reading",
+                    _latestSnapshot.CheckedAtLocal.ToString("h:mm:ss tt"));
+                _notifyIcon.Text = TruncateTooltip(
+                    string.Format(
+                        "Codex: {0}% left - OFFLINE - last {1}",
+                        _latestSnapshot.RemainingPercent,
+                        _latestSnapshot.CheckedAtLocal.ToString("h:mm tt")));
+                ReplaceIcon(
+                    _latestSnapshot.RemainingPercent.ToString(),
+                    GetUsageColor(_latestSnapshot.RemainingPercent),
+                    true);
+                AppLog.Info(
+                    string.Format(
+                        "Showing last successful reading from {0:O}; retrying in {1} minute(s).",
+                        _latestSnapshot.CheckedAtLocal,
+                        retryInterval / (60 * 1000)));
+                return;
+            }
+
             _summaryItem.Text = "Codex usage unavailable";
             _resetItem.Text = FriendlyError(exception);
             ClearResetCreditMenu();
             _resetCreditsItem.Text = "Free reset count unavailable";
             _resetCreditsItem.Enabled = false;
-            _checkedItem.Text = "Last attempt " + DateTime.Now.ToString("h:mm:ss tt");
+            _statusItem.Text =
+                "OFFLINE - last attempt " +
+                DateTime.Now.ToString("h:mm:ss tt");
             _notifyIcon.Text = TruncateTooltip("Codex usage unavailable - click for details");
             ReplaceIcon("!", Color.FromArgb(207, 34, 46));
         }
@@ -210,8 +255,9 @@ namespace CodexUsageTray
                 return;
             }
 
-            if (_latestSnapshot != null && string.IsNullOrWhiteSpace(_lastError))
+            if (_latestSnapshot != null)
             {
+                bool isOffline = !string.IsNullOrWhiteSpace(_lastError);
                 string resetText = _latestSnapshot.ResetAtLocal.HasValue
                     ? "Resets " + _latestSnapshot.ResetAtLocal.Value.ToString(
                         "dddd, MMMM d 'at' h:mm tt")
@@ -222,16 +268,23 @@ namespace CodexUsageTray
                         _latestSnapshot.AvailableResetCredits.Value,
                         _latestSnapshot.AvailableResetCredits.Value == 1 ? string.Empty : "s")
                     : "Free reset count unavailable";
+                string offlineText = isOffline
+                    ? "\nConnection is down; showing the reading from " +
+                      _latestSnapshot.CheckedAtLocal.ToString("h:mm:ss tt") + "."
+                    : string.Empty;
 
                 ShowBalloon(
-                    "Codex weekly usage",
+                    isOffline
+                        ? "Codex usage - offline"
+                        : "Codex weekly usage",
                     string.Format(
-                        "{0}% left ({1}% used)\n{2}\n{3}",
+                        "{0}% left ({1}% used)\n{2}\n{3}{4}",
                         _latestSnapshot.RemainingPercent,
                         _latestSnapshot.UsedPercent,
                         resetText,
-                        resetCreditsText),
-                    ToolTipIcon.Info);
+                        resetCreditsText,
+                        offlineText),
+                    isOffline ? ToolTipIcon.Warning : ToolTipIcon.Info);
             }
             else
             {
@@ -293,7 +346,18 @@ namespace CodexUsageTray
 
         private void ReplaceIcon(string text, Color color)
         {
-            Icon nextIcon = TrayIconRenderer.CreateStatusIcon(text, color);
+            ReplaceIcon(text, color, false);
+        }
+
+        private void ReplaceIcon(
+            string text,
+            Color color,
+            bool showOfflineBadge)
+        {
+            Icon nextIcon = TrayIconRenderer.CreateStatusIcon(
+                text,
+                color,
+                showOfflineBadge);
             Icon previousIcon = _currentIcon;
 
             _currentIcon = nextIcon;
@@ -303,6 +367,47 @@ namespace CodexUsageTray
             {
                 previousIcon.Dispose();
             }
+        }
+
+        private void SetRefreshTimerInterval(int intervalMilliseconds)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            // Treat the interval as "time after this completed attempt." This
+            // also prevents a manual refresh from inheriting an almost-expired
+            // offline retry timer and immediately launching another request.
+            _refreshTimer.Stop();
+            _refreshTimer.Interval = intervalMilliseconds;
+            _refreshTimer.Start();
+        }
+
+        private int GetOfflineRetryIntervalMilliseconds()
+        {
+            if (_consecutiveRefreshFailures <= 1)
+            {
+                return OfflineRetryIntervalMilliseconds;
+            }
+
+            if (_consecutiveRefreshFailures == 2)
+            {
+                return SecondOfflineRetryIntervalMilliseconds;
+            }
+
+            return RefreshIntervalMilliseconds;
+        }
+
+        private static string FormatUsageSummary(
+            UsageSnapshot snapshot,
+            string suffix)
+        {
+            return string.Format(
+                "Codex: {0}% {1} left{2}",
+                snapshot.RemainingPercent,
+                snapshot.IsWeekly ? "weekly" : "longest-window",
+                suffix);
         }
 
         private static Color GetUsageColor(int remainingPercent)
