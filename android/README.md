@@ -86,8 +86,13 @@ and any status-bar setting needed before treating the icon design as proven.
 Codex account libraries. `nativeprobe/` is a separate diagnostic APK, **Usage
 Meter Native Lab** (`com.apolito.codexusage.nativeprobe`). It can be installed
 alongside the preview. It has no network permission and never signs in or
-opens existing credentials. Opening it runs a synthetic request-policy test;
+opens real account credentials. Opening it runs a synthetic request-policy test;
 the screen must report **OFFLINE CHECK PASSED** with both requests denied.
+
+Its separate storage screen exercises fixed fixtures through Android Keystore
+and the real upstream storage methods. Save, overwrite, and delete have been
+verified across app process restarts on the API 30 x86_64 emulator. This remains
+an isolated diagnostic; the notification preview still uses sample percentages.
 
 See [native build instructions and limitations](native/README.md). The normal
 `:app` tasks above do not require the Rust toolchain or native libraries.

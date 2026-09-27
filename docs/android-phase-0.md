@@ -20,20 +20,20 @@ the real app ships.
 
 ## Gate A: source and authentication
 
-**Disposition: standalone Android access has not been established.** The
-bounded investigation found an official custom-client integration through
-`codex app-server`, with managed browser/device-code sign-in and a quota-read
-operation. It did not establish an independently registered Android OAuth
-client or hosted subscription-quota API. This is not proof that no such route
-can exist. A new client still needs a documented way to acquire and renew its
-own authorized account session.
+**Disposition: native execution and synthetic persistence are verified;
+live standalone access is not yet established.** The official custom-client
+integration through `codex app-server` documents managed browser/device-code
+sign-in and quota reads. Its managed flow has no separate client-registration
+step. Reusing the real account components on Android remains an integration
+experiment: service acceptance, TLS trust, and the complete phone-owned session
+lifecycle have not been verified.
 
 The documented external-token mode assumes a host already owns the user's
 authentication lifecycle. Platform API keys do not substitute for a ChatGPT
 subscription session. The access-token documentation currently describes
 Business/Enterprise automation and does not establish this personal Android
-use case. No login was initiated, no auth file was read, and no token or cookie
-was copied during the investigation.
+use case. No login was initiated, no real account auth file was read, and no
+account token or cookie was copied during the investigation.
 
 The browser destination was extracted from the official pricing page:
 
@@ -51,18 +51,18 @@ Live integration still needs an independently owned mobile session.
 A deeper source review found a concrete porting candidate in upstream commit
 `8f195c93d7e7acfef95acf273f0e49cce917e291`: `codex-login` exposes the managed
 device-code flow, and `codex-backend-client` exposes quota reads. Neither crate
-directly depends on the full `codex-core` agent engine. This suggests a narrow
-Android native library is worth investigating; its transitive dependencies
-and binary size have not been measured. Android release artifacts and a
-keyring backend are absent from the inspected implementation, and TLS/native
-dependencies require a real NDK build. Source reuse alone does not establish
-support for a separately branded OAuth client or a stable hosted quota API.
+directly depends on the full `codex-core` agent engine. These provided a native
+Android library candidate. The NDK builds now pass; their graph is
+broad and the unoptimized APK is large. Android's default backend in the pinned
+keyring crate is a mock, so the diagnostic installs an explicit Keystore
+adapter. Source reuse alone does not establish service acceptance or a stable
+hosted quota API.
 
-The next independent-source experiment is a pinned ARM64 JNI build with
-mocked authentication/quota inputs and synthetic storage data, before any
-live sign-in. It must prove loading, dependency size, TLS/platform compatibility,
-and an Android Keystore storage adapter. No desktop runtime, Termux dependency,
-first-party credential extraction, or live auth code has been added to the APK.
+The pinned JNI experiment has built both ARM64 and x86_64 libraries and passed
+Android x86_64 loading, default-deny request checks, and synthetic Keystore
+persistence. TLS/platform compatibility and the real session lifecycle remain
+the next gates. No desktop runtime, Termux dependency, or first-party credential
+extraction has been added, and no live authorization has been initiated.
 
 If explored separately, a desktop companion would keep Codex credentials on
 the host and expose only normalized quota/reset metadata through authenticated
@@ -76,8 +76,10 @@ The preview lets the user explicitly show a numeric sample, unknown, error,
 and stale states. Its notification is labeled as sample data and uses one
 silent LOW-importance channel. It has no network permission, credential
 handling, scheduled fetch, boot receiver, or foreground service. The preview
-posts through Android's actual small-icon API. Physical-phone validation is
-still pending; the enlarged icon inside the app does not establish legibility.
+posts through Android's actual small-icon API. The user confirmed successful
+phone launch and gave positive feedback; the full notification-readability
+matrix is still pending. The enlarged icon inside the app does not establish
+status-bar legibility.
 
 The user should inspect one-, two-, and three-digit samples in their real
 status bar, plus the stale marker, in light and dark System UI. The device's
@@ -198,6 +200,30 @@ The next storage boundary and its acceptance tests are documented in
 [Android secure storage](android-secure-storage.md). In particular, Android's
 default backend in the pinned `keyring` crate is a mock: installing the real
 adapter must be mandatory before any login operation can claim persistence.
+
+## Synthetic Android Keystore milestone
+
+The separate 0.1.1-lab diagnostic now implements that adapter for fixed synthetic
+fixtures. Java uses Android Keystore AES-GCM with versioned ciphertext under
+`noBackupFilesDir`; Rust installs the custom keyring builder behind an explicit
+initialization gate. All native operations are serialized and select
+`Keyring`/`Direct`, with no plaintext fallback or arbitrary credential input.
+Both ARM64 and x86_64 builds pass without upstream source edits.
+
+On Android 11/API 30 x86_64, real upstream save, load, and logout calls passed
+save/restart/read, overwrite/restart/read, and delete/restart/read. Each restart
+force-stopped and cold-launched the application. App-private inspection found
+encrypted fixture data, with no `auth.json` or plaintext fixture/token-field
+markers. The isolated Java vault failure suite passed; detailed fault scope
+and remaining limits are in the storage document.
+
+The next concrete compatibility gate is Android app-default certificate trust.
+The existing upstream account constructors have no public way to supply that
+verifier; [the TLS source review](android-tls-boundary.md) identifies a narrow
+HTTP-factory adaptation and local test matrix. No TLS adaptation or live login
+has been implemented. Production refresh/logout ordering, phone execution,
+backup behavior, source maintenance, and external packaging remain separate
+requirements. The installed notification preview still contains sample data.
 
 ## Sources checked
 

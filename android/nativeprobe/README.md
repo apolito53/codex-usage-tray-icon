@@ -2,8 +2,9 @@
 
 This separate developer APK exercises the pinned native account libraries with
 synthetic inputs and an unpublished network policy. It has no permissions and
-never opens credential storage. It is an internal validation tool, not a live
-usage meter or a sign-in screen.
+opens no real account credentials. Its separate storage check uses only fixed
+fixtures in an isolated Keystore namespace. It is an internal validation tool,
+not a live usage meter or a sign-in screen.
 
 Build the native library first using [the native instructions](../native/README.md).
 From the `android` directory, package one or both supported ABIs:
@@ -38,10 +39,26 @@ errors, `credential_store_opened: false`, and `transport_attempted: false`.
 Failure or native-load errors are displayed on screen. Panics are caught at the
 JNI boundary when Rust unwinding is available; a process abort cannot be caught.
 
+Version 0.1.1-lab adds **Synthetic storage checks**. Save, Read, Overwrite, and
+Delete exercise the actual upstream auth-storage methods through the custom
+Keystore adapter. Force-stop and cold-launch between operations to check disk
+persistence; the UI reports `initial`, `overwritten`, or `absent`, never tokens.
+The vault self-check uses a separate synthetic namespace. The native failure
+selector deliberately affects the primary synthetic fixture, so use those
+controls after the persistence sequence and finish with `fault-clear`.
+
+Native fault checks should expose error 1 for injected unavailability, error 4
+for an injected pre-rename write failure, error 2 for tampered ciphertext, and
+error 3 for a removed encryption key. A failed injected write must leave the
+previous record readable. Missing keys must not be silently regenerated over
+existing records. Fault setup success is distinct from a successful storage
+operation; expected failures must still display **STORAGE CHECK FAILED**.
+
 Android 11/API 30 x86_64 installation, cold launch, native loading, and this
 synthetic result passed. The app's crash buffer was empty. ARM64 compilation
-and linking passed; physical ARM64 execution has not been tested. No TLS,
-Keystore persistence, live login, refresh, or quota-retrieval success is implied.
+and linking passed; physical ARM64 execution has not been tested. Synthetic
+storage persistence also passed separate save/overwrite/delete sequences across
+app restarts. No TLS, live login, refresh, or quota-retrieval success is implied.
 
 Before distributing a native APK, finish the dependency-notice review described
 in [the collector instructions](../native/licenses/README.md) and include its

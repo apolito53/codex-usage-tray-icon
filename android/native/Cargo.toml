@@ -12,7 +12,9 @@ codex-login = { path = ".upstream/codex/codex-rs/login" }
 codex-backend-client = { path = ".upstream/codex/codex-rs/backend-client" }
 codex-http-client = { path = ".upstream/codex/codex-rs/http-client" }
 jni = "=0.21.1"
+keyring = "=3.6.3"
 serde_json = "1"
+sha2 = "0.10"
 tokio = { version = "1", features = ["rt", "time"] }
 # Upstream enables native-tls. Supply its ordinary Android cross-build dependency.
 openssl = { version = "0.10", features = ["vendored"] }

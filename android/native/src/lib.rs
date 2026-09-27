@@ -1,5 +1,8 @@
 //! Offline Android compile/link probe for two actual pinned Codex libraries.
-//! No auth store is opened. Both request paths are denied by upstream network policy.
+//! The network probe does not open auth storage. A separate probe stores fixed fixtures only.
+
+mod android_keyring;
+mod storage_probe;
 
 use codex_backend_client::Client;
 use codex_http_client::{HttpClientFactory, NetworkPolicyController, OutboundProxyPolicy};

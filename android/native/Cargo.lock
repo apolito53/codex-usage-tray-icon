@@ -1330,8 +1330,10 @@ dependencies = [
  "codex-http-client",
  "codex-login",
  "jni 0.21.1",
+ "keyring",
  "openssl",
  "serde_json",
+ "sha2 0.10.9",
  "tokio",
 ]
 

@@ -6,6 +6,9 @@
         android:label="Usage Meter Native Lab"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity
+            android:name="com.apolito.codexusage.preview.NativeStorageActivity"
+            android:exported="false" />
+        <activity
             android:name="com.apolito.codexusage.preview.NativeProbeActivity"
             android:exported="true">
             <intent-filter>

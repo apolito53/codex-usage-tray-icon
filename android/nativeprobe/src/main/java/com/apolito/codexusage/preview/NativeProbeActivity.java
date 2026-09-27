@@ -1,7 +1,10 @@
 package com.apolito.codexusage.preview;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import org.json.JSONObject;
@@ -18,7 +21,14 @@ public final class NativeProbeActivity extends Activity {
         result.setText("Offline native check\n\nSynthetic data only.\n\nLoading account components…");
         ScrollView scroll = new ScrollView(this);
         scroll.setFitsSystemWindows(true);
-        scroll.addView(result);
+        LinearLayout column = new LinearLayout(this);
+        column.setOrientation(LinearLayout.VERTICAL);
+        Button storage = new Button(this);
+        storage.setText("Synthetic storage checks");
+        storage.setOnClickListener(view -> startActivity(new Intent(this, NativeStorageActivity.class)));
+        column.addView(storage);
+        column.addView(result);
+        scroll.addView(column);
         setContentView(scroll);
 
         new Thread(() -> {

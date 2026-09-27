@@ -1,0 +1,402 @@
+{
+  "verified_on": "2026-09-27",
+  "scope": "Synthetic-only Android Keystore storage; no real login or account endpoint.",
+  "upstream_commit": "8f195c93d7e7acfef95acf273f0e49cce917e291",
+  "source_sha256": {
+    "android/native/src/android_keyring.rs": "3b6005d4b42946714d90d530a596e8eab36d9865a5b56c0b98d52277e9a52125",
+    "android/native/src/lib.rs": "02a2dcf936b069a13eb4a0b5b60fbf8b9365ce0431d7995357e9273191e3ab62",
+    "android/native/src/storage_probe.rs": "c7e8dc07d808aae3fc6640a460c10838614ac38c4879145bed62f5483bcf016d",
+    "android/nativeprobe/src/main/java/com/apolito/codexusage/preview/NativeProbe.java": "96f5272450efd2e34aa838155dd1191c8acdc02cd1d72dbef749a30c77d78608",
+    "android/nativeprobe/src/main/java/com/apolito/codexusage/preview/NativeProbeActivity.java": "0df200dd9ceb54fcefd0dcab7ba4359778162966958de09bf032a3d460ae9428",
+    "android/nativeprobe/src/main/java/com/apolito/codexusage/preview/NativeStorageActivity.java": "cba0ff488c021cc4ffcd19d099a41b916124b8b30b0c874f6e92a10fbaf58924",
+    "android/nativeprobe/src/main/java/com/apolito/codexusage/preview/NativeStorageProbe.java": "56aa1a315105a62faeb8acfe705cde0860455fb763df06e2d8a66848c453214e",
+    "android/nativeprobe/src/main/java/com/apolito/codexusage/preview/storage/AndroidCredentialVault.java": "1fbeca7af025b90252167cc62f9b1cd24bbc85870c655a360bb96678ec71d35b",
+    "android/nativeprobe/src/main/java/com/apolito/codexusage/preview/storage/StorageFixtureDiagnostics.java": "4d18f7484a36c9e25c23bb4d6bd6c8862d1d40dc967614cf66e277f7b3ffd04b",
+    "android/native/Cargo.lock": "473ddd4b41f3fe41f51757f3951bdd7fb16731a28e75bc1eff4b5a9077ad8b24",
+    "android/nativeprobe/src/main/AndroidManifest.xml": "323d38ec1d6bec85c4a5f18b6330f7461e62184849b9df6a7c005b69a08fd94b",
+    "android/nativeprobe/build.gradle.kts": "9b1971cfdd8a0d1961610672624d31bace94f2aadc863ac274bfdaeffb77749d"
+  },
+  "android_runtime": {
+    "api": 30,
+    "abi": "x86_64",
+    "environment": "Software emulator; physical ARM64 not tested.",
+    "package": "com.apolito.codexusage.nativeprobe",
+    "version": "0.1.1-lab",
+    "network_permission": false,
+    "external_distribution": false,
+    "restart_method": "Force-stop, cold launch, and reopen storage screen between save/overwrite/delete and readback.",
+    "app_crash_buffer": "empty",
+    "steps": {
+      "01-initialize": {
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "initialized": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "initialize",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "02-read-absent": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "matches_expected": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "read",
+        "state": "absent",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "03-save-initial": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "matches_expected": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "save",
+        "state": "initial",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "04-restart-after-save": {
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "initialized": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "initialize",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "05-read-initial-after-restart": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "matches_expected": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "read",
+        "state": "initial",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "06-overwrite": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "matches_expected": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "overwrite",
+        "state": "overwritten",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "07-restart-after-overwrite": {
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "initialized": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "initialize",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "08-read-overwritten-after-restart": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "matches_expected": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "read",
+        "state": "overwritten",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "09-delete": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "matches_expected": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "delete",
+        "removed": true,
+        "state": "absent",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "10-restart-after-delete": {
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "initialized": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "initialize",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "11-read-absent-after-restart": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "matches_expected": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "read",
+        "state": "absent",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "12-java-vault-failure-checks": {
+        "roundtrip": true,
+        "key_non_exportable": true,
+        "reopened_vault": true,
+        "failed_write_preserves_previous": true,
+        "unavailable_is_error": true,
+        "tamper_is_error": true,
+        "missing_key_is_error": true,
+        "passed": true,
+        "process_restart_tested": false
+      },
+      "13-save-before-faults": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "matches_expected": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "save",
+        "state": "initial",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "14-unavailable-on": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "fault_applied": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "fault-unavailable-on",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "15-read-unavailable": {
+        "credential_payload_returned": false,
+        "error": "storage_unavailable",
+        "error_code": 1,
+        "mode": "synthetic-storage-only",
+        "ok": false,
+        "operation": "read",
+        "transport_attempted": false
+      },
+      "16-unavailable-off": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "fault_applied": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "fault-unavailable-off",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "17-read-after-unavailable": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "matches_expected": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "read",
+        "state": "initial",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "18-fail-next-write": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "fault_applied": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "fault-fail-next-write",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "19-failed-overwrite": {
+        "credential_payload_returned": false,
+        "error": "write_failed",
+        "error_code": 4,
+        "mode": "synthetic-storage-only",
+        "ok": false,
+        "operation": "overwrite",
+        "transport_attempted": false
+      },
+      "20-prior-data-after-failed-write": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "matches_expected": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "read",
+        "state": "initial",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "21-tamper-record": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "fault_applied": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "fault-tamper-record",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "22-read-tampered": {
+        "credential_payload_returned": false,
+        "error": "record_corrupt",
+        "error_code": 2,
+        "mode": "synthetic-storage-only",
+        "ok": false,
+        "operation": "read",
+        "transport_attempted": false
+      },
+      "23-clear-tamper": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "fault_applied": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "fault-clear",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "24-save-before-key-removal": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "matches_expected": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "save",
+        "state": "initial",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "25-remove-key": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "fault_applied": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "fault-remove-key",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "26-read-key-missing": {
+        "credential_payload_returned": false,
+        "error": "key_missing",
+        "error_code": 3,
+        "mode": "synthetic-storage-only",
+        "ok": false,
+        "operation": "read",
+        "transport_attempted": false
+      },
+      "27-overwrite-key-missing": {
+        "credential_payload_returned": false,
+        "error": "key_missing",
+        "error_code": 3,
+        "mode": "synthetic-storage-only",
+        "ok": false,
+        "operation": "overwrite",
+        "transport_attempted": false
+      },
+      "28-clear-missing-key": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "fault_applied": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "fault-clear",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      },
+      "29-read-absent-after-clear": {
+        "auth_file_present": false,
+        "backend": "android-keystore-keyring",
+        "credential_payload_returned": false,
+        "matches_expected": true,
+        "mode": "synthetic-storage-only",
+        "ok": true,
+        "operation": "read",
+        "state": "absent",
+        "storage_mode": "keyring-direct",
+        "transport_attempted": false
+      }
+    },
+    "encrypted_file_inspection": {
+      "no_auth_json": true,
+      "no_plaintext_fixture_markers": true,
+      "files": [
+        {
+          "path": "no_backup/native-storage-fixtures/synthetic-codex-auth/vault/vault.lock",
+          "bytes": 0,
+          "prefix_hex": ""
+        },
+        {
+          "path": "no_backup/native-storage-fixtures/synthetic-codex-auth/vault/beefc409dc6495b6d31141f79bbae13939ce97f85c09d64af0b61da726e8e27a.bin",
+          "bytes": 311,
+          "prefix_hex": "43445856010c0000"
+        }
+      ]
+    }
+  },
+  "native_libraries": {
+    "aarch64-linux-android": {
+      "bytes": 77923728,
+      "sha256": "a5149ceed3ecd3788aafcae1d9a66a6fea15864eba5daec0de3a9b548ea4bdf4",
+      "load_alignment_bytes": 16384,
+      "dynamic_dependencies": [
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    "x86_64-linux-android": {
+      "bytes": 74843608,
+      "sha256": "38d058c762c64e7a08803b04528edfa23786e9a1e2f132fec631ef56bd85d161",
+      "load_alignment_bytes": 16384,
+      "dynamic_dependencies": [
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    }
+  },
+  "apk": {
+    "bytes": 49755648,
+    "sha256": "b8dc3029d85930b96f8a7b0826c199f3985827d03b6c5cc8533dfe0882d71951",
+    "v2_signature": "passed",
+    "zip_16kb_alignment": "passed",
+    "lint_errors": 0,
+    "lint_warnings": 9
+  },
+  "limits": [
+    "Fixed synthetic credentials only; no real account session.",
+    "ARM64 compile/link only; runtime verified on API 30 x86_64 emulator.",
+    "Unavailable storage and pre-rename write failure were injected.",
+    "No real device lock, backup/transfer, path migration, power-loss, async refresh/logout ordering, TLS, or live login validation."
+  ]
+}

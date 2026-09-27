@@ -1,9 +1,10 @@
 # Android secure-storage boundary candidate
 
-September 27, 2026. This is a source review and a proposal for the next bounded
-experiment. **No Android credential adapter has been implemented or validated.**
-The review did not read account credentials, initiate login, or contact an account
-endpoint. Successful native compilation does not establish credential persistence.
+September 27, 2026. The source review below now has an implemented
+**synthetic-only diagnostic adapter**, with separate runtime verification.
+No real account credentials were read, no login was initiated, and no account
+endpoint was contacted. Successful compilation alone does not establish
+credential persistence or a production authentication lifecycle.
 
 ## Reviewed source
 
@@ -116,7 +117,27 @@ categories for the UI. A locked or corrupted store must not appear as an ordinar
 signed-out state. The raw `load_auth_dot_json` helper is available for the synthetic
 storage experiment and write-side maintenance.
 
-## Planned validation — not executed
+## Implemented diagnostic boundary
+
+The implementation is in `android/native/src/android_keyring.rs` and
+`storage_probe.rs`, with the Java vault and fault controls under
+`android/nativeprobe/.../preview/storage/`. Both Android ABIs compile and link.
+The APK keeps its separate diagnostic package and has no network permission.
+
+The vault constructor accepts only a bounded `synthetic-*` namespace. The
+native bridge further fixes its namespace, canonical home, service, account
+identity, and fixture payloads. It exposes no arbitrary credential input.
+Initialization retains application-scoped Java references and installs the
+custom builder before permitting commands, with a process-wide mutex around
+all operations. Activity recreation cannot replace the retained vault.
+
+The native commands exercise actual upstream `save_auth`, `load_auth_dot_json`,
+and `logout` through `Keyring`/`Direct`. Fault controls deliberately affect only
+those synthetic records. Errors remain distinct and sanitized through JNI;
+post-rename durability uncertainty is separate from a rejected pre-rename
+write. No real asynchronous login, refresh, or logout pipeline is implemented.
+
+## Validation scope
 
 Use a dedicated synthetic-only test namespace with network denied. Exercise the
 real public Codex storage APIs with `Keyring`/`Direct`, not just adapter methods:
@@ -132,9 +153,46 @@ real public Codex storage APIs with `Keyring`/`Direct`, not just adapter methods
 5. Check initialization failures, process recreation, path relocation, and backup
    or transfer behavior. Confirm no uninitialized call reaches keyring's mock.
 
-Passing these checks would establish the storage boundary only. TLS trust, the
-accepted authorization route, live login, refresh, and quota retrieval remain
-separate milestones.
+These are the acceptance cases; only results explicitly recorded below should
+be treated as executed. They establish a storage boundary, not a complete
+authentication lifecycle. TLS trust, the accepted authorization route, live
+login, refresh, and quota retrieval remain separate milestones.
+
+## Android runtime results
+
+The 0.1.1-lab APK ran on the Android 11/API 30 x86_64 emulator. Initialization
+selected the Android Keystore keyring adapter and explicit direct keyring mode.
+Real upstream save/read/logout calls passed these independent process-restart
+sequences: save then read `initial`, overwrite then read `overwritten`, and
+delete then read `absent`. Each restart force-stopped and cold-launched the app;
+reopening a Java object was not used as the persistence evidence.
+
+App-private inspection found a hashed-name encrypted record and a lock file,
+with no `auth.json`, fixture plaintext marker, or token-field text in those files.
+Reports returned only sanitized state and remained synthetic-only, with no
+credential payload or HTTP transport attempt. These checks do not establish
+hardware-backed key storage, real-device lock behavior, path migration, backup
+or transfer behavior, power-loss durability, or asynchronous refresh/logout
+ordering. The separate [TLS boundary](android-tls-boundary.md) remains unimplemented.
+
+The isolated Java vault self-check also passed its eight assertions: roundtrip,
+non-exportable key, reopening the vault object, preservation after an injected
+pre-rename write failure, explicit unavailable-store error, tamper rejection,
+missing-key rejection, and overall success. That suite correctly reports
+`process_restart_tested: false`; the distinct native sequence above supplies
+the process-restart evidence. The unavailable-store case is injected, not a
+claim that real device-lock behavior was tested.
+
+The native fault sequence then exercised the actual upstream methods through
+JNI: an unavailable-store read returned error 1 and recovered after the fault
+was removed; an injected overwrite failure returned error 4 and retained the
+previous fixture; tampered ciphertext returned error 2; removing the Keystore
+key made both read and overwrite return error 3. Explicit fixture cleanup
+restored the absent state. Recovery controls remained usable after errors, and
+the final app crash buffer was empty.
+
+The checksummed build record and all 29 sanitized step reports are preserved in
+[`android/native/storage-verification.json`](../android/native/storage-verification.json).
 
 [codex-revision]: https://github.com/openai/codex/tree/8f195c93d7e7acfef95acf273f0e49cce917e291
 [codex-keyring]: https://github.com/openai/codex/blob/8f195c93d7e7acfef95acf273f0e49cce917e291/codex-rs/keyring-store/src/lib.rs
