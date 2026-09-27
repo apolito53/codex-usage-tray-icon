@@ -128,8 +128,19 @@ The production source was not changed during that negative check.
 These are JVM Android-framework tests. A separate API 36 emulator attempt
 could not complete a stable software-only boot: system processes crashed and
 APK installation was rejected while Android was still booting. Neither APK
-was launched in that emulator. Actual phone launch and notification rendering
-remain unverified until the user retries. No physical-device success is claimed.
+was launched in that emulator. The user subsequently confirmed that 0.1.1
+opens successfully on their phone and gave positive feedback. This establishes
+the launch repair on that phone; the full readability/settings matrix above
+has not been individually recorded.
+
+A subsequent API 30 x86_64 software emulator completed startup and verified
+0.1.1 installation, cold launch, fixture selection, Show, and Hide. Selecting
+100 produced notification ID 117 with the bitmap small icon, expected sample
+text, LOW importance, and no sound or vibration; Hide removed the active
+notification. A screenshot shows the numeric icon in the system status bar.
+The emulator had initial system ANRs during its slow boot, then settled; no
+app crash occurred. This is additional Android runtime evidence, not a
+substitute for physical-phone readability across themes and settings.
 
 The replacement retains the same package and signing key for an in-place
 update. The APK v2 signature verifies; its manifest still requests only
@@ -140,6 +151,53 @@ update. The APK v2 signature verifies; its manifest still requests only
 ```text
 8115895bc16b3c6ecd8e6787984628c46b8d59811d0c2ec7b128d5db3e7ec4c1
 ```
+
+## Native account-library investigation
+
+The next standalone feasibility test uses real upstream `codex-login`,
+`codex-backend-client`, and `codex-http-client` libraries, pinned to the source
+commit below. The normal Android application loads a JNI shared library; it
+does not start the desktop executable or app-server. Its inputs are synthetic,
+its request destination is `offline.invalid`, and its unpublished upstream
+network policy denies requests before transport. The diagnostic APK also has
+no network permission. No existing credentials are opened or copied.
+
+ARM64 `cargo check --locked` succeeds with Rust 1.95.0 and Android NDK
+28.2.13676358 targeting API 26, with no changes to upstream source. The wrapper
+enables OpenSSL's ordinary `vendored` feature to supply the native TLS dependency
+missing from the Android NDK. Shared-library linking and on-device execution
+are distinct checks recorded in `android/native/README.md`.
+
+This is a deliberately separate **Usage Meter Native Lab**, not a live meter
+or an account connection screen. The current dependency graph contains hundreds
+of packages, including storage, image, PTY, and AWS support.
+Compilation success does not yet establish a maintainable production boundary.
+
+Before connecting an account, this route still needs Android certificate-trust
+validation, credential persistence through Android Keystore, and a complete
+phone-owned login/refresh/sign-out lifecycle. The upstream keyring crate has a
+public credential-builder hook that is a candidate for the platform storage
+adapter. None of those live-account capabilities is claimed by the offline
+probe. Successful execution means only that pinned request code loads and
+reaches the expected default-deny boundary inside Android.
+
+The first x86_64 diagnostic APK passed Android 11/API 30 installation, cold
+launch, JNI loading, and both synthetic request checks. The screen displayed
+`OFFLINE CHECK PASSED`, returned the pinned commit and expected expiration,
+and reported no credential-store opening or transport attempt. The package's
+manifest has no requested permissions, and its app-specific crash buffer was
+empty. The existing notification preview remained running alongside it.
+
+The unoptimized x86_64 APK is 46,346,018 bytes, including a 46,324,152-byte
+stripped native library. Production size has not been evaluated. This lab APK
+is an internal validation artifact; dependency-notice collection and review
+are required before external distribution. ARM64 linking and hardware execution
+are tracked separately from the x86_64 runtime check.
+
+The next storage boundary and its acceptance tests are documented in
+[Android secure storage](android-secure-storage.md). In particular, Android's
+default backend in the pinned `keyring` crate is a mock: installing the real
+adapter must be mandatory before any login operation can claim persistence.
 
 ## Sources checked
 

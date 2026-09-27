@@ -79,3 +79,19 @@ must survive Android's tint. Permission denial, a blocked channel, and Hide
 must behave honestly. Updates must reuse one notification and stay silent with
 the default channel settings. Record actual device, Android version, theme,
 and any status-bar setting needed before treating the icon design as proven.
+
+## Standalone account-library investigation
+
+`native/` contains a pinned, offline JNI experiment using the real upstream
+Codex account libraries. `nativeprobe/` is a separate diagnostic APK, **Usage
+Meter Native Lab** (`com.apolito.codexusage.nativeprobe`). It can be installed
+alongside the preview. It has no network permission and never signs in or
+opens existing credentials. Opening it runs a synthetic request-policy test;
+the screen must report **OFFLINE CHECK PASSED** with both requests denied.
+
+See [native build instructions and limitations](native/README.md). The normal
+`:app` tasks above do not require the Rust toolchain or native libraries.
+Building `:nativeprobe` requires a directory of freshly built libraries passed
+with `-PnativeProbeLibDir`, laid out as Android ABI folders (`arm64-v8a` and/or
+`x86_64`). A successful offline result is a native-runtime check only; it does
+not establish phone-owned sign-in, token refresh, or live usage retrieval.

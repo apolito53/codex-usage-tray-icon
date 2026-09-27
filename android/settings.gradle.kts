@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "CodexUsagePreview"
 include(":app")
+include(":nativeprobe")

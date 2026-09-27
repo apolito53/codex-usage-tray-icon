@@ -1,0 +1,32 @@
+[package]
+name = "codex-android-native-probe"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+codex-login = { path = ".upstream/codex/codex-rs/login" }
+codex-backend-client = { path = ".upstream/codex/codex-rs/backend-client" }
+codex-http-client = { path = ".upstream/codex/codex-rs/http-client" }
+jni = "=0.21.1"
+serde_json = "1"
+tokio = { version = "1", features = ["rt", "time"] }
+# Upstream enables native-tls. Supply its ordinary Android cross-build dependency.
+openssl = { version = "0.10", features = ["vendored"] }
+
+# Cargo does not inherit the dependency workspace's patches. Preserve its pins.
+[patch.crates-io]
+crossterm = { git = "https://github.com/openai-oss-forks/crossterm", rev = "efa177859fd9623d57b9fe7ae9bf491ae1ac6ec4" }
+tokio-tungstenite = { git = "https://github.com/openai-oss-forks/tokio-tungstenite", rev = "0e5b2d73aa18dd9f0a50ee9ff199d5aef7594186" }
+tungstenite = { git = "https://github.com/openai-oss-forks/tungstenite-rs", rev = "4fffad30fe373adbdcffab9545e9e9bf4f2fc19f" }
+
+[patch."ssh://git@github.com/openai-oss-forks/tungstenite-rs.git"]
+tungstenite = { git = "https://github.com/openai-oss-forks/tungstenite-rs", rev = "4fffad30fe373adbdcffab9545e9e9bf4f2fc19f" }
+
+[profile.release]
+opt-level = "s"
+lto = "thin"
+strip = "symbols"
