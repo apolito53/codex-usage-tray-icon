@@ -5,6 +5,10 @@ in an Android status bar. It contains **sample data only**: no account sign-in,
 network permission, live usage source, background service, or scheduled work.
 It does not demonstrate that standalone Android usage access works.
 
+Use preview **0.1.1** or later. Version 0.1.0 requested the system-bar controller
+before creating the window's decor and could crash on launch on Android 11+.
+Version 0.1.1 corrects that initialization order and installs over 0.1.0.
+
 The UI uses a small native Kotlin activity for this disposable spike. This does
 not choose the long-term UI framework or architecture for any future app.
 
@@ -14,13 +18,18 @@ Use JDK 17, Android SDK 36, and Gradle 8.11.1 via the checked-in wrapper:
 
 ```sh
 cd android
-./gradlew :app:assembleDebug :app:lintDebug
+./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 On Windows, use `gradlew.bat`. The package name is
 `com.apolito.codexusage.preview`; it installs as **Usage Meter Preview**.
 The debug APK is only for the preview, not a signed production delivery.
+
+The startup regression test uses Robolectric's Android 11 and Android 14
+frameworks to exercise cold launch, recreation, and the absence of unsolicited
+notifications. Reintroducing 0.1.0's early controller access fails both cases.
+These are JVM framework tests, not a substitute for the phone check below.
 
 ## Check on a phone
 

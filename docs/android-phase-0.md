@@ -43,12 +43,32 @@ Native Android routing to that exact page remains untested. The preview's
 sample notification opens its own screen, so it cannot imply the sample quota
 came from the account dashboard.
 
-Before implementing live reads, either establish a supported independent
-mobile route or obtain the user's decision on a desktop/server-assisted
-snapshot reader. A host-assisted design would keep Codex auth on the chosen
-host and expose only normalized quota/reset metadata through authenticated
-transport. It would depend on that host being online. No host service,
-relay, remote RPC exposure, or new hosting has been added by this phase.
+The user subsequently confirmed that phone independence is a requirement.
+A desktop companion may be explored as a separate optional route; it is not
+selected as the Android meter's source and does not satisfy that requirement.
+Live integration still needs an independently owned mobile session.
+
+A deeper source review found a concrete porting candidate in upstream commit
+`8f195c93d7e7acfef95acf273f0e49cce917e291`: `codex-login` exposes the managed
+device-code flow, and `codex-backend-client` exposes quota reads. Neither crate
+directly depends on the full `codex-core` agent engine. This suggests a narrow
+Android native library is worth investigating; its transitive dependencies
+and binary size have not been measured. Android release artifacts and a
+keyring backend are absent from the inspected implementation, and TLS/native
+dependencies require a real NDK build. Source reuse alone does not establish
+support for a separately branded OAuth client or a stable hosted quota API.
+
+The next independent-source experiment is a pinned ARM64 JNI build with
+mocked authentication/quota inputs and synthetic storage data, before any
+live sign-in. It must prove loading, dependency size, TLS/platform compatibility,
+and an Android Keystore storage adapter. No desktop runtime, Termux dependency,
+first-party credential extraction, or live auth code has been added to the APK.
+
+If explored separately, a desktop companion would keep Codex credentials on
+the host and expose only normalized quota/reset metadata through authenticated
+transport. It would depend on that host being online; a cached relay response
+must retain the host's original observation time. No host service, relay,
+remote RPC exposure, or new hosting has been added.
 
 ## Gate B: notification readability
 
@@ -68,7 +88,7 @@ the preview does not repost it automatically.
 Build/lint verification establishes packaging and static correctness only.
 Physical-phone legibility and native link routing remain user-device checks.
 
-## Build verification
+## Initial build verification (0.1.0)
 
 `./gradlew :app:assembleDebug :app:lintDebug` succeeded with the pinned JDK/SDK.
 Lint reports zero errors and two nonblocking warnings: an English-only sample
@@ -80,7 +100,7 @@ backup rules need revisiting before any account data is introduced.
 of the packaged manifest confirmed the only requested permission is
 `POST_NOTIFICATIONS`, with package `com.apolito.codexusage.preview`, minimum SDK
 26, target SDK 36, and version `0.1.0-preview`. No emulator or physical-device
-execution was available in this session. There is no claim of runtime or
+execution was available for the initial delivery. There was no claim of runtime or
 readability acceptance yet.
 
 Delivered preview: `usage-meter-preview-0.1.0.apk` (849,847 bytes), debug-signed
@@ -88,6 +108,37 @@ for this disposable preview, not a production release. Its SHA-256 is:
 
 ```text
 a7b4c7662b819bd2d40df2c9c85c3ac85be017052520169796cf08a78565a9da
+```
+
+This initial APK was reported to crash on launch and is superseded by 0.1.1.
+The startup code requested `Window.insetsController` before installing a
+decor view. Android's `PhoneWindow` dereferences that view internally, before
+Kotlin's nullable-controller check can run. Version 0.1.1 moves system-bar
+configuration after `setContentView` and increments the version code to 2.
+
+## Startup repair verification (0.1.1)
+
+The replacement builds and passes Android lint. The dedicated Robolectric
+test exercises cold launch, screen recreation, a populated content view, and
+no notification on launch against API 30 and 34 (two tests, zero failures).
+Restoring the original initialization order in an isolated copy makes both
+tests fail with `PhoneWindow.getInsetsController()` reporting a null `mDecor`.
+The production source was not changed during that negative check.
+
+These are JVM Android-framework tests. A separate API 36 emulator attempt
+could not complete a stable software-only boot: system processes crashed and
+APK installation was rejected while Android was still booting. Neither APK
+was launched in that emulator. Actual phone launch and notification rendering
+remain unverified until the user retries. No physical-device success is claimed.
+
+The replacement retains the same package and signing key for an in-place
+update. The APK v2 signature verifies; its manifest still requests only
+`POST_NOTIFICATIONS`. Test dependencies are excluded from the APK.
+
+`usage-meter-preview-0.1.1.apk` is 848,391 bytes. SHA-256:
+
+```text
+8115895bc16b3c6ecd8e6787984628c46b8d59811d0c2ec7b128d5db3e7ec4c1
 ```
 
 ## Sources checked
@@ -101,6 +152,13 @@ The desktop baseline is main commit
 [authentication](https://learn.chatgpt.com/docs/auth),
 [access tokens](https://learn.chatgpt.com/docs/enterprise/access-tokens), and
 [pricing/dashboard link](https://learn.chatgpt.com/docs/pricing).
+
+[Upstream account/login source](https://github.com/openai/codex/tree/8f195c93d7e7acfef95acf273f0e49cce917e291/codex-rs/login)
+and [quota client source](https://github.com/openai/codex/tree/8f195c93d7e7acfef95acf273f0e49cce917e291/codex-rs/backend-client)
+were inspected from a read-only checkout. No account credentials or live
+account endpoints were accessed.
+
+[Android PhoneWindow initialization](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android14-release/core/java/com/android/internal/policy/PhoneWindow.java).
 
 [Android small-icon API](https://developer.android.com/reference/android/app/Notification.Builder),
 [importance and icon visibility](https://developer.android.com/reference/android/app/NotificationManager),

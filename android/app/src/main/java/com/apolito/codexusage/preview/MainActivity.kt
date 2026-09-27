@@ -74,7 +74,7 @@ class MainActivity : Activity() {
         if (hasFocus && ::notificationStatus.isInitialized) updateScreen()
     }
 
-    private fun buildScreen() {
+    private fun configureSystemBars() {
         if (Build.VERSION.SDK_INT >= 30) {
             window.setDecorFitsSystemWindows(false)
             val appearance = if (dark) 0 else WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
@@ -89,7 +89,9 @@ class MainActivity : Activity() {
                 View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
                 if (dark) 0 else View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
         }
+    }
 
+    private fun buildScreen() {
         val scroll = ScrollView(this).apply {
             setBackgroundColor(bgColor)
             isFillViewport = true
@@ -181,6 +183,9 @@ class MainActivity : Activity() {
         column.addView(text("If the number is missing, your phone may hide silent notification icons or limit how many fit. Check the notification settings and your system’s status-bar settings. Newer Android versions may also let you dismiss an ongoing notification; Show preview restores it.", 13f, mutedColor), rowParams(top = 12))
         column.addView(text("This preview does not connect to your account or show real usage. Tap its notification to return to the sample picker.", 13f, mutedColor), rowParams(top = 18))
         setContentView(scroll)
+        // PhoneWindow.getInsetsController() dereferences its decor view on
+        // API 30+. Install the content/decor before asking for the controller.
+        configureSystemBars()
         scroll.requestApplyInsets()
     }
 
