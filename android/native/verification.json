@@ -1,0 +1,63 @@
+{
+  "verified_on": "2026-09-27",
+  "scope": "Offline synthetic probe only; no account login, credentials, or live quota retrieval.",
+  "upstream_commit": "8f195c93d7e7acfef95acf273f0e49cce917e291",
+  "jni_source_sha256": "187aae04c57f1f88e53f88f0697905c7114d03abdc18f5b7ea54b6385803dc6f",
+  "toolchain": {
+    "rust": "1.95.0",
+    "ndk": "28.2.13676358",
+    "android_api_min": 26
+  },
+  "libraries": {
+    "aarch64-linux-android": {
+      "bytes": 73331528,
+      "sha256": "73ddd0386c5044f24549dee390705949336f3756b919ab8b44583b2a18b3e9ef",
+      "profile": "unoptimized dev; debug info disabled",
+      "jni_export": "Java_com_apolito_codexusage_preview_NativeProbe_run",
+      "load_alignment_bytes": 16384,
+      "dynamic_dependencies": [
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    "x86_64-linux-android": {
+      "bytes": 69967408,
+      "sha256": "ad666b09e25452055891fd658214846b0f4e71515a7964fee2d3548aa8524d7e",
+      "profile": "unoptimized dev; debug info disabled",
+      "jni_export": "Java_com_apolito_codexusage_preview_NativeProbe_run",
+      "load_alignment_bytes": 16384,
+      "dynamic_dependencies": [
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    }
+  },
+  "android_runtime": {
+    "api": 30,
+    "abi": "x86_64",
+    "environment": "Software emulator; hardware ARM64 execution not tested.",
+    "install": "passed",
+    "cold_launch": "passed",
+    "jni": "passed",
+    "app_crash_buffer": "empty",
+    "network_permission": false,
+    "report": {
+      "backend_discovery_url": "https://offline.invalid/api/codex/config/bundle",
+      "credential_store_opened": false,
+      "device_code_request_denied": "application network policy is unavailable",
+      "mode": "offline-synthetic-only",
+      "synthetic_expiration": 1700000000,
+      "transport_attempted": false,
+      "upstream_commit": "8f195c93d7e7acfef95acf273f0e49cce917e291",
+      "usage_request_denied": "application network policy is unavailable"
+    },
+    "apk": {
+      "bytes": 46346018,
+      "sha256": "d1ddd87570d8e73e93e4725820cbc9a22ccca585c45e51f7c8da38853a9113fb"
+    },
+    "apk_16kb_zip_alignment": "passed",
+    "external_distribution": false
+  }
+}
