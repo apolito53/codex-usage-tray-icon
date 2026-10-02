@@ -38,7 +38,10 @@ namespace CodexUsageTray
         {
             string detail = exception == null
                 ? message
-                : message + " " + exception.GetType().Name + ": " + exception.Message;
+                : message + " " + exception.GetType().Name + ": " + exception.Message +
+                    (string.IsNullOrWhiteSpace(exception.StackTrace)
+                        ? string.Empty
+                        : Environment.NewLine + exception.StackTrace);
 
             Write("ERROR", detail);
         }

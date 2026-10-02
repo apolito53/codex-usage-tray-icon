@@ -64,7 +64,7 @@ is enough:
 
 ```powershell
 .\build.ps1
-.\bin\CodexUsageTray.exe
+.\start.ps1 -ExecutablePath .\bin\CodexUsageTray.exe
 ```
 
 Requirements:
@@ -86,6 +86,9 @@ full path of a usable `codex.exe`.
 ```
 
 Add `-PurgeLogs` to remove the diagnostic logs as well.
+For a desktop-launched tray, run that option from an ordinary desktop
+PowerShell window; an MSIX-packaged terminal can see an older private log
+folder instead of the desktop log folder.
 
 ## Diagnostics
 
@@ -97,3 +100,21 @@ The rolling log is stored at:
 
 The app refreshes immediately on launch and every five minutes afterward.
 Manual refresh is available from the right-click menu.
+
+To start the installed copy from a terminal or coding agent, run `./start.ps1`.
+The launcher resolves the EXE's physical backing path and asks the existing
+Explorer desktop to start it, then verifies that it is outside the terminal's
+Windows job (other Windows jobs may be used by the desktop).
+This matters for MSIX-packaged terminals: their AppData files and registry
+writes can be redirected into a package cache that other desktop apps cannot
+see through the logical path. Their child processes can also inherit a job
+that ends when the agent session closes. The launcher registers the physical
+path through Windows' desktop registry provider and reads it back to verify
+the real user startup key. Explorer must already
+be running; no service or scheduled task is used.
+
+The desktop process writes its logs in the real user's LocalAppData folder,
+which can differ from the folder a packaged terminal sees at the same path.
+Startup logs include the process ID, session ID, version, and Windows job
+membership. Exceptions include their stack traces, and a normal message-loop
+exit is logged separately from a refresh failure.

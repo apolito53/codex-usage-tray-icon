@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.1.5.0 - 2026-10-01
+
+- Resolve the executable's physical backing path when installation runs inside
+  an MSIX-packaged terminal, and verify startup in the real desktop registry.
+- Launch through the existing Explorer desktop and verify independence from
+  the terminal's Windows job so agent cleanup cannot terminate the tray.
+- Keep duplicate launches single-instance and remove stale startup registration
+  during uninstall even when the executable is already missing.
+- Add process, session, version, job-limit, message-loop exit, and exception
+  stack-trace diagnostics without logging raw usage-server payloads.
+
 ## v0.1.4.0 - 2026-07-29
 
 - Kept the last successful usage, reset time, and reset-credit details visible

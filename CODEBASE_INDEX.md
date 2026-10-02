@@ -25,6 +25,10 @@
 - `src/StartupRegistration.cs` - manages the current-user Run registry value.
 - `src/AppLog.cs` - bounded local diagnostic logging without raw server
   payloads or credentials.
+- `start.ps1` and `scripts/DesktopLaunch.cs` - resolve the physical backing
+  EXE and launch through the existing Explorer desktop, avoiding MSIX AppData
+  redirection and inherited process jobs. The launcher updates and verifies the
+  real desktop startup key through Windows' registry provider.
 
 ## Common commands
 

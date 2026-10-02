@@ -15,6 +15,13 @@ $runValueName = 'CodexUsageTray'
 
 & $buildScript
 
+if (-not ('CodexUsageTrayDesktop' -as [type])) {
+    Add-Type -Path (Join-Path $projectRoot 'scripts\DesktopLaunch.cs')
+}
+$existingPhysicalExecutable = if (Test-Path -LiteralPath $installedExecutable) {
+    [CodexUsageTrayDesktop]::ResolvePhysicalPath($installedExecutable)
+} else { $installedExecutable }
+
 $resolvedLocalAppData = [System.IO.Path]::GetFullPath($env:LOCALAPPDATA)
 $resolvedInstallRoot = [System.IO.Path]::GetFullPath($installRoot)
 
@@ -28,7 +35,7 @@ Get-CimInstance Win32_Process -Filter "Name = 'CodexUsageTray.exe'" |
     Where-Object {
         $_.ExecutablePath -and
         [System.IO.Path]::GetFullPath($_.ExecutablePath).Equals(
-            [System.IO.Path]::GetFullPath($installedExecutable),
+            [System.IO.Path]::GetFullPath($existingPhysicalExecutable),
             [System.StringComparison]::OrdinalIgnoreCase)
     } |
     ForEach-Object {
@@ -57,20 +64,19 @@ if (Test-Path -LiteralPath $pdbPath) {
 
 $runKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($runKeyPath)
 try {
-    if ($NoStartup) {
-        $runKey.DeleteValue($runValueName, $false)
-    }
-    else {
-        $runKey.SetValue($runValueName, "`"$installedExecutable`"")
-    }
+    # Remove the older possibly virtualized registration. The desktop
+    # launcher registers its physical path in the real user's key below.
+    $runKey.DeleteValue($runValueName, $false)
 }
 finally {
     $runKey.Dispose()
 }
 
-Start-Process -FilePath $installedExecutable -WindowStyle Hidden
+$startupMode = if ($NoStartup) { 'Disable' } else { 'Enable' }
+& (Join-Path $projectRoot 'start.ps1') -ExecutablePath $installedExecutable -StartupMode $startupMode
 
-Write-Host "Installed and launched $installedExecutable"
+$physicalInstalledExecutable = [CodexUsageTrayDesktop]::ResolvePhysicalPath($installedExecutable)
+Write-Host "Installed and launched $physicalInstalledExecutable"
 if ($NoStartup) {
     Write-Host 'Start with Windows: off'
 }

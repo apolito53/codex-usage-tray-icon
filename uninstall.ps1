@@ -16,6 +16,13 @@ $resolvedLocalAppData = [System.IO.Path]::GetFullPath($env:LOCALAPPDATA)
 $resolvedInstallRoot = [System.IO.Path]::GetFullPath($installRoot)
 $resolvedLogRoot = [System.IO.Path]::GetFullPath($logRoot)
 
+if (-not ('CodexUsageTrayDesktop' -as [type])) {
+    Add-Type -Path (Join-Path $PSScriptRoot 'scripts\DesktopLaunch.cs')
+}
+$physicalExecutable = if (Test-Path -LiteralPath $installedExecutable) {
+    [CodexUsageTrayDesktop]::ResolvePhysicalPath($installedExecutable)
+} else { $installedExecutable }
+
 if (-not $resolvedInstallRoot.StartsWith($resolvedLocalAppData, [System.StringComparison]::OrdinalIgnoreCase)) {
     throw "Refusing to uninstall outside LOCALAPPDATA: $resolvedInstallRoot"
 }
@@ -24,7 +31,7 @@ Get-CimInstance Win32_Process -Filter "Name = 'CodexUsageTray.exe'" |
     Where-Object {
         $_.ExecutablePath -and
         [System.IO.Path]::GetFullPath($_.ExecutablePath).Equals(
-            [System.IO.Path]::GetFullPath($installedExecutable),
+            [System.IO.Path]::GetFullPath($physicalExecutable),
             [System.StringComparison]::OrdinalIgnoreCase)
     } |
     ForEach-Object {
@@ -42,6 +49,9 @@ Get-CimInstance Win32_Process -Filter "Name = 'CodexUsageTray.exe'" |
             Start-Sleep -Milliseconds 100
         }
     }
+
+# Remove stale desktop registration even after a partial/missing installation.
+& (Join-Path $PSScriptRoot 'start.ps1') -StartupMode DisableOnly
 
 $runKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($runKeyPath, $true)
 if ($runKey) {
