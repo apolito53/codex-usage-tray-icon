@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+- Added Ubuntu usage history with one-minute polling and private, 90-day
+  SQLite storage. Failed polls, restarts, resets, and long gaps do not generate
+  invented usage deltas.
+- Added native allowance-cycle and Today charts with remaining-balance and
+  cumulative views, daily drill-down, and 1h/30m/15m/5m/1m intervals. Burn rates
+  use `% of allowance/min` labels. Cycles follow recorded resets and can be
+  browsed independently; remaining balances use a fixed 0–100% scale.
+- Preserved fractional usage readings for charts, integrated helper-module
+  installation, and added an independent `--purge-history` uninstall option.
+
+## v0.2.0.0 - 2026-08-18
+
+- Added an Ubuntu GTK/AppIndicator tray host backed by the signed-in Codex CLI.
+- Added PATH, NVM, user-local, asdf, system, and Snap CLI discovery, including
+  NVM default-alias selection and the Node PATH repair needed by GNOME
+  autostart sessions.
+- Added Linux install, autostart, uninstall, diagnostics, dynamic SVG icons,
+  stale/offline retry behavior, and a read-only `--check` command.
+- Added focused tests for Linux path discovery, usage parsing, reset credits,
+  and icon generation while preserving the existing Windows implementation.
+
 ## v0.1.5.0 - 2026-10-01
 
 - Resolve the executable's physical backing path when installation runs inside

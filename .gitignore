@@ -3,3 +3,5 @@ obj/
 *.user
 *.suo
 
+__pycache__/
+*.py[cod]
