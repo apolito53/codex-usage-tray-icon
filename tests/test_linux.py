@@ -20,6 +20,51 @@ def make_executable(path: Path) -> None:
     path.chmod(0o755)
 
 
+class PrepaidCreditTests(unittest.TestCase):
+    def test_menu_stale_missing_and_recovery(self):
+        app = object.__new__(tray.TrayApplication)
+        for name in ("summary_item", "reset_item", "prepaid_credits_item", "status_item", "_replace_icon", "_apply_reset_credit_menu"):
+            setattr(app, name, mock.Mock())
+        snapshot = tray.parse_usage_response({"result": {"rateLimits": {
+            "primary": {"usedPercent": 25}, "credits": {"balance": "12.50"}
+        }}})
+        snapshot = tray.dataclasses.replace(snapshot, checked_at_local=mock.Mock())
+        snapshot.checked_at_local.strftime.return_value = "12:00:00 PM"
+        app.latest_snapshot = snapshot
+        app._apply_snapshot(snapshot)
+        app.prepaid_credits_item.set_label.assert_called_with("Prepaid credits: 12.50")
+        app._apply_error(RuntimeError("offline"))
+        app.prepaid_credits_item.set_label.assert_called_with("Prepaid credits: 12.50 - STALE")
+        app._apply_snapshot(tray.dataclasses.replace(snapshot, prepaid_balance=None))
+        app.prepaid_credits_item.set_label.assert_called_with("Prepaid credits: unavailable")
+        app._apply_snapshot(snapshot)
+        app.prepaid_credits_item.set_label.assert_called_with("Prepaid credits: 12.50")
+
+    def test_credit_states_and_bucket_selection(self):
+        cases = [
+            ({"balance": "1234.5670", "hasCredits": True}, "1234.5670"),
+            ({"balance": "0", "hasCredits": False}, "0"),
+            ({"balance": None}, "unavailable"),
+            ({"hasCredits": True}, "unavailable"),
+            (None, "unavailable"),
+            ({"balance": "NaN"}, "unavailable"),
+            ({"balance": 123}, "unavailable"),
+            ({"balance": "3", "unlimited": "true"}, "3"),
+            ({"balance": "3", "unlimited": True}, "unlimited"),
+            ({"balance": "3", "hasCredits": False}, "3"),
+        ]
+        for credits, expected in cases:
+            for mapped in (False, True):
+                with self.subTest(credits=credits, mapped=mapped):
+                    bucket = {"primary": {"usedPercent": 25, "windowDurationMins": 10080}, "credits": credits}
+                    result = {"rateLimits": bucket}
+                    if mapped:
+                        result = {"rateLimitsByLimitId": {"codex": bucket}, "rateLimits": {"primary": {"usedPercent": 99}}}
+                    snapshot = tray.parse_usage_response({"result": result})
+                    self.assertEqual("Prepaid credits: " + expected, tray.format_prepaid_credits(snapshot))
+                    self.assertEqual(75, snapshot.remaining_percent)
+
+
 class CodexPathResolverTests(unittest.TestCase):
     def test_prefers_path(self):
         with tempfile.TemporaryDirectory() as temporary:

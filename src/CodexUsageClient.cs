@@ -210,6 +210,8 @@ namespace CodexUsageTray
             bool isWeekly = selectedDuration >= (7 * 24 * 60) - 60;
             int? availableResetCredits = ReadAvailableResetCredits(result);
             IList<ResetCreditSnapshot> resetCredits = ReadResetCreditDetails(result);
+            object prepaidCredits;
+            bucket.TryGetValue("credits", out prepaidCredits);
 
             return new UsageSnapshot(
                 usedPercent,
@@ -221,7 +223,8 @@ namespace CodexUsageTray
                 resetCredits,
                 limitId,
                 limitName,
-                DateTime.Now);
+                DateTime.Now,
+                PrepaidCredits.Parse(prepaidCredits));
         }
 
         private static int? ReadAvailableResetCredits(

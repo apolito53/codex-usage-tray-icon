@@ -16,7 +16,8 @@ namespace CodexUsageTray
             IList<ResetCreditSnapshot> resetCredits,
             string limitId,
             string limitName,
-            DateTime checkedAtLocal)
+            DateTime checkedAtLocal,
+            PrepaidCredits prepaidCredits = null)
         {
             UsedPercent = usedPercent;
             RemainingPercent = remainingPercent;
@@ -30,9 +31,12 @@ namespace CodexUsageTray
             LimitId = limitId;
             LimitName = limitName;
             CheckedAtLocal = checkedAtLocal;
+            PrepaidCredits = prepaidCredits;
         }
 
         internal int UsedPercent { get; private set; }
+
+        internal PrepaidCredits PrepaidCredits { get; private set; }
 
         internal int RemainingPercent { get; private set; }
 

@@ -57,6 +57,32 @@ class UsageSnapshot:
     limit_name: Optional[str]
     checked_at_local: dt.datetime
     measured_used_percent: Optional[float] = None
+    prepaid_balance: Optional[str] = None
+    prepaid_unlimited: bool = False
+
+
+def parse_prepaid_credits(value: Any) -> Tuple[Optional[str], bool]:
+    if not isinstance(value, dict):
+        return None, False
+    if value.get("unlimited") is True:
+        return None, True
+    balance = value.get("balance")
+    if not isinstance(balance, str):
+        return None, False
+    balance = balance.strip()
+    if re.fullmatch(r"-?[0-9]+(?:\.[0-9]+)?", balance) is None:
+        return None, False
+    return balance, False
+
+
+def format_prepaid_credits(snapshot: Optional[UsageSnapshot]) -> str:
+    if snapshot is None:
+        value = "unavailable"
+    elif snapshot.prepaid_unlimited:
+        value = "unlimited"
+    else:
+        value = snapshot.prepaid_balance if snapshot.prepaid_balance is not None else "unavailable"
+    return "Prepaid credits: " + value
 
 
 def _xdg_path(variable: str, fallback: Path) -> Path:
@@ -282,6 +308,7 @@ def parse_usage_response(response: Mapping[str, Any]) -> UsageSnapshot:
         )
     )
 
+    prepaid_balance, prepaid_unlimited = parse_prepaid_credits(bucket.get("credits"))
     return UsageSnapshot(
         used_percent=used_percent,
         remaining_percent=100 - used_percent,
@@ -294,6 +321,8 @@ def parse_usage_response(response: Mapping[str, Any]) -> UsageSnapshot:
         limit_name=str(bucket["limitName"]) if bucket.get("limitName") is not None else None,
         checked_at_local=dt.datetime.now().astimezone(),
         measured_used_percent=measured_used_percent,
+        prepaid_balance=prepaid_balance,
+        prepaid_unlimited=prepaid_unlimited,
     )
 
 
@@ -680,11 +709,13 @@ class TrayApplication:
         self.reset_item = self._disabled_item("Reset time: loading…")
         self.reset_credits_item = self.Gtk.MenuItem(label="Free resets: loading…")
         self.reset_credits_item.set_sensitive(False)
+        self.prepaid_credits_item = self._disabled_item("Prepaid credits: loading…")
         self.status_item = self._disabled_item("Connection: loading…")
         for item in (
             self.summary_item,
             self.reset_item,
             self.reset_credits_item,
+            self.prepaid_credits_item,
             self.status_item,
         ):
             self.menu.append(item)
@@ -831,6 +862,7 @@ class TrayApplication:
             else "Reset time unavailable"
         )
         self._apply_reset_credit_menu(snapshot)
+        self.prepaid_credits_item.set_label(format_prepaid_credits(snapshot))
         self.status_item.set_label(
             "Online - updated " + snapshot.checked_at_local.strftime("%-I:%M:%S %p")
         )
@@ -843,6 +875,7 @@ class TrayApplication:
     def _apply_error(self, exception: BaseException) -> None:
         if self.latest_snapshot is not None:
             snapshot = self.latest_snapshot
+            self.prepaid_credits_item.set_label(format_prepaid_credits(snapshot) + " - STALE")
             self.summary_item.set_label(self._format_summary(snapshot, " - STALE"))
             self.status_item.set_label(
                 "OFFLINE - showing " + snapshot.checked_at_local.strftime("%-I:%M:%S %p") + " reading"
@@ -855,6 +888,7 @@ class TrayApplication:
             return
 
         self.summary_item.set_label("Codex usage unavailable")
+        self.prepaid_credits_item.set_label(format_prepaid_credits(None))
         message = str(exception)
         self.reset_item.set_label(message if len(message) <= 80 else message[:77] + "…")
         self._clear_reset_credit_menu()
@@ -1008,6 +1042,7 @@ def print_live_usage() -> int:
     print("Weekly usage: {}% remaining ({}% used)".format(snapshot.remaining_percent, snapshot.used_percent))
     print("Resets: " + reset)
     print("Free resets: " + credits)
+    print(format_prepaid_credits(snapshot))
     return 0
 
 

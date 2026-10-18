@@ -18,6 +18,7 @@ namespace CodexUsageTray
         private readonly ToolStripMenuItem _summaryItem;
         private readonly ToolStripMenuItem _resetItem;
         private readonly ToolStripMenuItem _resetCreditsItem;
+        private readonly ToolStripMenuItem _prepaidCreditsItem;
         private readonly ToolStripMenuItem _statusItem;
         private readonly ToolStripMenuItem _refreshItem;
         private readonly ToolStripMenuItem _startupItem;
@@ -50,6 +51,7 @@ namespace CodexUsageTray
             {
                 Enabled = false
             };
+            _prepaidCreditsItem = new ToolStripMenuItem("Prepaid credits: loading…") { Enabled = false };
             _refreshItem = new ToolStripMenuItem("Refresh now");
             _startupItem = new ToolStripMenuItem("Start with Windows");
 
@@ -66,6 +68,7 @@ namespace CodexUsageTray
             menu.Items.Add(_summaryItem);
             menu.Items.Add(_resetItem);
             menu.Items.Add(_resetCreditsItem);
+            menu.Items.Add(_prepaidCreditsItem);
             menu.Items.Add(_statusItem);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(_refreshItem);
@@ -186,6 +189,7 @@ namespace CodexUsageTray
                 : "Reset time unavailable";
 
             ApplyResetCreditMenu(snapshot);
+            _prepaidCreditsItem.Text = PrepaidCredits.Format(snapshot.PrepaidCredits);
 
             _statusItem.Text =
                 "Online - updated " +
@@ -213,6 +217,7 @@ namespace CodexUsageTray
 
             if (_latestSnapshot != null)
             {
+                _prepaidCreditsItem.Text = PrepaidCredits.Format(_latestSnapshot.PrepaidCredits) + " - STALE";
                 _summaryItem.Text = FormatUsageSummary(
                     _latestSnapshot,
                     " - STALE");
@@ -237,6 +242,7 @@ namespace CodexUsageTray
             }
 
             _summaryItem.Text = "Codex usage unavailable";
+            _prepaidCreditsItem.Text = PrepaidCredits.Format(null);
             _resetItem.Text = FriendlyError(exception);
             ClearResetCreditMenu();
             _resetCreditsItem.Text = "Free reset count unavailable";
@@ -278,12 +284,13 @@ namespace CodexUsageTray
                         ? "Codex usage - offline"
                         : "Codex weekly usage",
                     string.Format(
-                        "{0}% left ({1}% used)\n{2}\n{3}{4}",
+                        "{0}% left ({1}% used)\n{2}\n{3}\n{5}{4}",
                         _latestSnapshot.RemainingPercent,
                         _latestSnapshot.UsedPercent,
                         resetText,
                         resetCreditsText,
-                        offlineText),
+                        offlineText,
+                        PrepaidCredits.Format(_latestSnapshot.PrepaidCredits)),
                     isOffline ? ToolTipIcon.Warning : ToolTipIcon.Info);
             }
             else

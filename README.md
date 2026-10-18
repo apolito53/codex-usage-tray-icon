@@ -9,6 +9,14 @@ Windows, hover for a quick summary, left-click for reset details, or
 right-click for controls. Ubuntu's AppIndicator opens the same details and
 controls from its normal tray menu.
 
+**Prepaid credits** appears in the Windows left-click summary and right-click
+menu, and in Ubuntu's tray menu and `--check` output. It shows the credit
+balance reported by the signed-in Codex CLI account, separately from free
+resets. Decimal precision is preserved; no currency conversion is assumed.
+Missing balances show **unavailable**, and failed refreshes retain the last
+balance with a **STALE** label in the menu. A recent purchase appears once
+Codex reports it through the app-server usage response.
+
 If a refresh cannot reach Codex, the last successful percentage, reset time,
 and reset-credit details stay visible as a stale reading. The tray icon gains a
 red offline badge, the menu and tooltip say **OFFLINE**, and the app retries
@@ -237,3 +245,11 @@ which can differ from the folder a packaged terminal sees at the same path.
 Startup logs include the process ID, session ID, version, and Windows job
 membership. Exceptions include their stack traces, and a normal message-loop
 exit is logged separately from a refresh failure.
+
+
+## Planning
+
+- [Current handoff](WORKING_MEMORY.md) - implementation state and verification.
+- [Durable project notes](CRYSTALIZED_MEMORY.md) - protocol and integration constraints.
+- [Actionable work](TODO.md) - concrete, current tasks.
+- [Ideas and suggestions](SPITBALL.md) - rough possibilities to explore.
