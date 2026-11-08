@@ -1,9 +1,9 @@
 diff --git a/codex-rs/http-client/src/android_platform.rs b/codex-rs/http-client/src/android_platform.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..d3e012ab50d1f743dd475885a2ab284c5750aa4e
+index 0000000000000000000000000000000000000000..0dddca1b26119669830eff69c873822ba86e6666
 --- /dev/null
 +++ b/codex-rs/http-client/src/android_platform.rs
-@@ -0,0 +1,100 @@
+@@ -0,0 +1,110 @@
 +//! Android embedding seam. The host MUST use the platform HTTPS implementation,
 +//! with redirects disabled; upstream retains destination permits and redirect policy.
 +//! This module intentionally contains no network transport or fallback of its own.
@@ -31,6 +31,16 @@ index 0000000000000000000000000000000000000000..d3e012ab50d1f743dd475885a2ab284c
 +    dyn Fn(AndroidHttpRequest) -> Result<AndroidHttpResponse, ()> + Send + Sync;
 +
 +static TRANSPORT: OnceLock<Arc<PlatformTransport>> = OnceLock::new();
++
++// Dropping an ordinary JoinHandle would leave queued work runnable. Abort the
++// queued callback when an upstream permit revokes this future. An already-running
++// platform call remains bounded by its platform timeout and owns no persistence.
++struct AbortOnDrop<T>(tokio::task::JoinHandle<T>);
++impl<T> Drop for AbortOnDrop<T> {
++    fn drop(&mut self) {
++        self.0.abort();
++    }
++}
 +
 +/// One process-wide transport; a later caller cannot replace the account's bridge.
 +pub fn install_android_http_transport(
@@ -83,12 +93,12 @@ index 0000000000000000000000000000000000000000..d3e012ab50d1f743dd475885a2ab284c
 +    };
 +    // Blocking JNI/platform I/O does not monopolize the caller's Tokio executor.
 +    // A revoked permit can drop this future; no callback persists credentials.
-+    let operation = tokio::task::spawn_blocking(move || transport(input));
++    let mut operation = AbortOnDrop(tokio::task::spawn_blocking(move || transport(input)));
 +    let output = match timeout {
-+        Some(timeout) => tokio::time::timeout(timeout, operation)
++        Some(timeout) => tokio::time::timeout(timeout, &mut operation.0)
 +            .await
 +            .map_err(|_| unavailable())?,
-+        None => operation.await,
++        None => (&mut operation.0).await,
 +    }
 +    .map_err(|_| unavailable())?
 +    .map_err(|_| unavailable())?;

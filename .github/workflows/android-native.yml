@@ -1,9 +1,12 @@
 name: Android native library
 on:
   push:
-    branches: [main, codex/android-account]
     paths:
-      - 'android/native/**'
+      - 'android/native/Cargo.*'
+      - 'android/native/src/**'
+      - 'android/native/patches/*.patch'
+      - 'android/native/*.sh'
+      - 'android/native/upstream-revision.txt'
       - 'android/build-native.sh'
       - '.github/workflows/android-native.yml'
   workflow_dispatch:
