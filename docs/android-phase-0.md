@@ -1,5 +1,8 @@
 # Android meter: phase 0
 
+This is the September 2026 experiment record. The [Android meter guide](../android/README.md)
+covers the subsequent phone sign-in and connected notification.
+
 September 27, 2026. Source/authentication findings and a notification-readability
 preview. This work does not decide whether later capabilities share an app or
 architecture.

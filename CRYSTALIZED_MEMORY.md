@@ -1,5 +1,12 @@
 # Durable project notes
 
+- Android keeps the application ID `com.apolito.codexusage.preview` and the
+  original notification channel for in-place upgrades. Keep the signing key
+  local. Its native account library uses Codex’s managed device authorization
+  and passive allowance client. Android’s HTTPS transport sends the account
+  requests, and permanent credentials use Android Keystore
+  encryption. See [Android setup](android/README.md) for the build inputs.
+
 - Windows uses .NET Framework and its C# compiler; reflection tests loading
   System.Web.Extensions need Windows PowerShell 5.1, not PowerShell 7.
 - Purchased credits are `credits` on the selected rate-limit bucket, with

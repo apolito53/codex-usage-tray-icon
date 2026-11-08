@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Android 0.2.0 adds phone-owned ChatGPT sign-in and a status-bar reading of
+  the remaining weekly Codex allowance, with automatic refresh and sign-out.
+
 - Added Ubuntu usage history with one-minute polling and private, 90-day
   SQLite storage. Failed polls, restarts, resets, and long gaps do not generate
   invented usage deltas.

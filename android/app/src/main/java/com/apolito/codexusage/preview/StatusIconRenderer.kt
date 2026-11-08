@@ -13,7 +13,10 @@ import android.graphics.Typeface
  * Match the desktop's circle and centered number, leaving the background clear.
  */
 object StatusIconRenderer {
-    fun render(sample: PreviewSample, stale: Boolean): Bitmap {
+    fun render(remaining: Int?, stale: Boolean, error: Boolean = false): Bitmap =
+        renderText(remaining?.takeIf { it in 0..100 }?.toString() ?: if (error) "!" else "?", stale)
+
+    private fun renderText(iconText: String, stale: Boolean): Bitmap {
         val bitmap = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -26,14 +29,14 @@ object StatusIconRenderer {
         paint.style = Paint.Style.FILL
         paint.typeface = Typeface.DEFAULT_BOLD
         paint.textAlign = Paint.Align.CENTER
-        paint.textSize = when (sample.iconText.length) {
+        paint.textSize = when (iconText.length) {
             3 -> 25f
             2 -> 38f
             else -> 42f
         }
         val metrics = paint.fontMetrics
         val baseline = 32f - (metrics.ascent + metrics.descent) / 2f
-        canvas.drawText(sample.iconText, 32f, baseline, paint)
+        canvas.drawText(iconText, 32f, baseline, paint)
 
         if (stale) {
             // A punched-out X in a bright disk survives monochrome system tint.

@@ -1,11 +1,11 @@
 # Codebase Index
 
-## Android preview
+## Android account meter
 
-- `android/` - fixture-only status-bar readability preview; no live usage source.
-- `docs/android-phase-0.md` - data-access findings and the next integration gate.
-
-The preview does not decide the architecture of future Android capabilities.
+- [Android setup, build and device checks](android/README.md) covers the phone sign-in and the numeric notification.
+- `android/app/` contains the Kotlin screen, notification, refresh job, Android HTTPS transport and encrypted vault.
+- `android/native/src/account.rs` runs the pinned Codex device login, token lifecycle and passive weekly allowance read.
+- [Original Android spike](docs/android-phase-0.md) records the notification preview and separate offline native lab.
 
 ## Entry points
 

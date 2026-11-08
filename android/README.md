@@ -1,102 +1,71 @@
-# Android notification preview
+# Codex Usage Meter for Android
 
-This Phase 0 APK tests whether the desktop-style numeric usage icon is readable
-in an Android status bar. It contains **sample data only**: no account sign-in,
-network permission, live usage source, background service, or scheduled work.
-It does not demonstrate that standalone Android usage access works.
+The meter shows the weekly Codex allowance remaining as a number in the status bar. Open the notification drawer for the last observation and local reset time. It runs on the phone and supports Android 8 or later on ARM64 and x86_64.
 
-Use preview **0.1.1** or later. Version 0.1.0 requested the system-bar controller
-before creating the window's decor and could crash on launch on Android 11+.
-Version 0.1.1 corrects that initialization order and installs over 0.1.0.
+## Connect a ChatGPT account
 
-The UI uses a small native Kotlin activity for this disposable spike. This does
-not choose the long-term UI framework or architecture for any future app.
+1. Install the APK and open **Codex Usage Meter**. Version 0.2.0 updates the 0.1.1 preview when both are signed with the same Android key.
+2. Tap **Sign in with ChatGPT**, copy the one-time code and tap **Open ChatGPT sign-in**. Sign in on OpenAI’s website and enter the code. If your account disables this flow, enable device code login in ChatGPT’s security settings. A workspace administrator controls this setting for managed accounts. [OpenAI device-code instructions](https://learn.chatgpt.com/docs/auth#login-on-headless-devices)
+3. Return to the meter. After approval, it reads the allowance and reset time automatically. Tap **Show meter** to put the number in the status bar and grant notification permission if Android asks.
 
-## Build and install
+**Refresh** requests a reading immediately. Android also schedules a network-connected refresh roughly every 15 minutes, subject to power and network conditions. A failed refresh preserves the previous reading and marks it stale. A successful response with no weekly window shows an unknown value. **Hide** dismisses the indicator. **Sign out** clears the phone’s session and cached reading and stops its periodic job.
 
-Use JDK 17, Android SDK 36, and Gradle 8.11.1 via the checked-in wrapper:
+## How it works
+
+The APK embeds the open-source Codex account libraries at the revision in [upstream-revision.txt](native/upstream-revision.txt). It runs Codex’s device-code login, renewable session and passive allowance reader. The Kotlin transport uses Android’s standard HTTPS certificate and hostname verification for the device authorization, token and allowance requests. It rejects redirects and restricts each destination to its expected method and path. The app identifies itself as `codex_usage_meter_android`. [OpenAI Codex account methods](https://learn.chatgpt.com/docs/app-server#auth-endpoints)
+
+The upstream library holds session data in memory. The only persistent credential record is encrypted with an Android Keystore AES-GCM key and written atomically to app-private, backup-excluded storage. A separate cache holds the latest allowance, timestamps and a digest used to match the reading to the signed-in account. The app’s diagnostics contain operation outcomes only.
+
+## Build
+
+Use the [Android native library workflow](../.github/workflows/android-native.yml) to build the two libraries from the intended source revision. Download `account-lib-arm64-v8a` and `account-lib-x86_64`. Extract their ABI directories into `android/native/out`. Extract the `notices` directory from the [dependency notices workflow](../.github/workflows/android-notices.yml) into the same location. This produces:
+
+```text
+android/native/out/arm64-v8a/libcodex_android_native_probe.so
+android/native/out/x86_64/libcodex_android_native_probe.so
+android/native/out/notices/native-notices.zip
+android/native/out/notices/notice-report.json
+```
+
+The library filename is shared with the original experiment. The build script checks the production JNI exports before publishing a library artifact. The separate `:nativeprobe` APK remains an offline diagnostic.
+
+To build the libraries on Linux directly, install Rust 1.95.0 with both Android targets, the Android NDK 28.2.13676358 and the host build tools for the pinned crates. With `ANDROID_HOME` set, run the following from the repository root:
 
 ```sh
-cd android
-./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest
+bash android/build-native.sh aarch64-linux-android "$PWD/android/native/out"
+bash android/build-native.sh x86_64-linux-android "$PWD/android/native/out"
+```
+
+Build the app from `android/` with JDK 17, Android SDK 36 and the checked-in Gradle wrapper. Set `-PaccountNativeDir=/absolute/path` if the libraries and notices are elsewhere.
+
+```sh
+./gradlew :app:testDebugUnitTest :app:lintDebug
+./gradlew :app:assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-On Windows, use `gradlew.bat`. The package name is
-`com.apolito.codexusage.preview`; it installs as **Usage Meter Preview**.
-The debug APK is only for the preview, not a signed production delivery.
+On Windows use `gradlew.bat`. For a non-debuggable sideload build, run `:app:assembleRelease`, sign the unsigned APK locally with the same key as the prior install, and verify it with `apksigner verify --verbose`. The maintainers’ signing key is kept on the signing machine.
 
-The startup regression test uses Robolectric's Android 11 and Android 14
-frameworks to exercise cold launch, recreation, and the absence of unsolicited
-notifications. Reintroducing 0.1.0's early controller access fails both cases.
-These are JVM framework tests, not a substitute for the phone check below.
+## Device checks and diagnostics
 
-## Check on a phone
+Run the synthetic native-account instrumentation suite on a disposable x86_64 emulator. It uses the packaged Rust library, a test-only transport and Android Keystore. The emulator must have a clean test account store. The remaining live account check uses the OpenAI page opened by the app on the owner’s phone.
 
-Open the app and tap **Show preview**. Android 13 or later requests notification
-permission at this point. Nothing is posted simply by opening the app.
+```sh
+./gradlew :app:connectedDebugAndroidTest
+```
 
-Choose 0, 9, 10, 72, 99, and 100. Check the actual status-bar icon at normal
-viewing distance and pull down the notification drawer. Unknown (`?`) and error
-(`!`) are separate fixtures. Toggle **Stale / offline sample** to inspect a
-monochrome × badge beside the last sample number. Error and unknown can also
-display the badge without inventing a cached numeric reading.
+For a process-restart check, run the dedicated instrumentation test twice on the
+same clean emulator. The first invocation writes synthetic credentials. The
+second requires the matching fixture and a new process, then clears it.
 
-The same notification ID is updated silently. The expanded content is marked
-as sample data, shows simulated usage and reset details, and offers **Hide
-preview**. Tap the notification to return to the sample picker. Actual native
-or browser reset-page navigation is intentionally unimplemented in this spike.
+```sh
+test_class=com.apolito.codexusage.preview.NativeAccountProcessRestartTest
+runner=com.apolito.codexusage.preview.test/androidx.test.runner.AndroidJUnitRunner
+adb shell am instrument -w -e class "$test_class" -e accountProcessPhase prepare "$runner"
+adb shell am force-stop com.apolito.codexusage.preview
+adb shell am instrument -w -e class "$test_class" -e accountProcessPhase restore "$runner"
+```
 
-Check light and dark mode, large system font settings, and portrait/landscape.
-The activity applies system-bar and display-cutout insets for edge-to-edge
-Android versions. It preserves the selected fixture between launches but never
-automatically posts a dismissed notification. It does not start on boot.
+Android’s `logd` service collects the app’s bounded lifecycle and refresh events. Use a trusted attached phone or disposable emulator, select it with `adb -s SERIAL`, and run `logcat -d -s CodexUsageMeter:I` after sign-in or refresh. The platform keeps a rolling diagnostic buffer. Android runs the app normally if an ADB client is absent.
 
-If permission is denied or the channel is blocked, **Notification settings**
-opens the applicable app or channel screen. Grant access, return, and press
-**Show preview** again. Some phones hide silent status-bar icons by default, or
-show only a limited number; this app cannot override that system preference.
-An ongoing notification can still be dismissible on recent Android versions.
-
-## Icon decision to validate
-
-The renderer mirrors the desktop's 64 px outlined circle and bold centered
-number, but its background is transparent because Android tints small icons
-from their alpha mask. The offline mark uses geometry rather than a red dot.
-Three-digit values use smaller type to preserve `100` within the circle.
-
-`Notification.Builder.setSmallIcon(Icon)` accepts a generated bitmap, so this
-preview uses the renderer directly. Pre-generated drawable resources remain an
-option if the device check shows a compatibility or readability problem. The
-large icon on the setup screen is a composition preview, not proof that its
-tiny system-rendered counterpart is legible.
-
-## Pass criteria
-
-The real phone must show the six numeric samples, unknown, error, and stale
-without confusing 0 with missing data. `100` must be readable; the stale mark
-must survive Android's tint. Permission denial, a blocked channel, and Hide
-must behave honestly. Updates must reuse one notification and stay silent with
-the default channel settings. Record actual device, Android version, theme,
-and any status-bar setting needed before treating the icon design as proven.
-
-## Standalone account-library investigation
-
-`native/` contains a pinned, offline JNI experiment using the real upstream
-Codex account libraries. `nativeprobe/` is a separate diagnostic APK, **Usage
-Meter Native Lab** (`com.apolito.codexusage.nativeprobe`). It can be installed
-alongside the preview. It has no network permission and never signs in or
-opens real account credentials. Opening it runs a synthetic request-policy test;
-the screen must report **OFFLINE CHECK PASSED** with both requests denied.
-
-Its separate storage screen exercises fixed fixtures through Android Keystore
-and the real upstream storage methods. Save, overwrite, and delete have been
-verified across app process restarts on the API 30 x86_64 emulator. This remains
-an isolated diagnostic; the notification preview still uses sample percentages.
-
-See [native build instructions and limitations](native/README.md). The normal
-`:app` tasks above do not require the Rust toolchain or native libraries.
-Building `:nativeprobe` requires a directory of freshly built libraries passed
-with `-PnativeProbeLibDir`, laid out as Android ABI folders (`arm64-v8a` and/or
-`x86_64`). A successful offline result is a native-runtime check only; it does
-not establish phone-owned sign-in, token refresh, or live usage retrieval.
+The [September notification and account spike](../docs/android-phase-0.md) records the original sample APK, native lab and early device checks.

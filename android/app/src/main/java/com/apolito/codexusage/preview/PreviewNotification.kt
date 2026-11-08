@@ -11,8 +11,13 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Icon
 import android.os.Build
+import java.text.DateFormat
+import java.util.Date
 
+/** A single silent notification. Only an explicit Show action creates it. */
 object PreviewNotification {
+    // Retain the preview channel and ID so upgrades preserve Android settings
+    // and replace a previous notification rather than creating a second one.
     const val CHANNEL_ID = "usage_preview_v1"
     private const val NOTIFICATION_ID = 117
 
@@ -33,17 +38,37 @@ object PreviewNotification {
     }
 
     fun canPost(context: Context): Boolean =
-        manager(context).areNotificationsEnabled() &&
+        (Build.VERSION.SDK_INT < 33 ||
+            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) &&
+            manager(context).areNotificationsEnabled() &&
             manager(context).getNotificationChannel(CHANNEL_ID)?.importance != NotificationManager.IMPORTANCE_NONE
 
     fun isVisible(context: Context): Boolean =
         manager(context).activeNotifications.any { it.id == NOTIFICATION_ID }
 
-    fun show(context: Context, sample: PreviewSample, stale: Boolean) {
-        if (Build.VERSION.SDK_INT >= 33 &&
-            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) return
-        val openPreview = PendingIntent.getActivity(
+    /** Called only in response to the user's explicit Show action. */
+    @Synchronized
+    fun show(context: Context, state: MeterState): Boolean {
+        if (!state.connected) return false
+        createChannel(context)
+        return canPost(context) && post(context, state)
+    }
+
+    /** Safe for the controller's background refresh; never resurrect a dismissal. */
+    @Synchronized
+    fun updateIfVisible(context: Context, state: MeterState) {
+        if (!state.connected) {
+            hide(context)
+        } else if (isVisible(context) && canPost(context)) {
+            post(context, state)
+        }
+    }
+
+    private fun post(context: Context, state: MeterState): Boolean {
+        val reading = state.reading
+        val remaining = reading?.remaining?.takeIf { it in 0..100 }
+        val readingError = reading == null && !state.busy && (state.stale || state.message != null)
+        val openMeter = PendingIntent.getActivity(
             context,
             0,
             Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
@@ -55,44 +80,55 @@ object PreviewNotification {
             Intent(context, HideNotificationReceiver::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val title = when (sample) {
-            PreviewSample.UNKNOWN -> "PREVIEW · unknown (sample data)"
-            PreviewSample.ERROR -> "PREVIEW · error (sample data)"
-            else -> "PREVIEW · ${sample.remaining}% remaining (sample)"
+        val title = if (remaining != null) {
+            "Codex · $remaining% weekly remaining"
+        } else {
+            "Codex · weekly allowance unavailable"
         }
-        val state = when {
-            sample == PreviewSample.ERROR -> "Sample fetch failed; no previous reading."
-            sample == PreviewSample.UNKNOWN -> "Sample account has no known weekly reading."
-            stale -> "STALE / OFFLINE · sample last update: 45 min ago."
-            else -> "Sample updated just now."
+        val status = buildString {
+            if (state.stale) append("STALE / OFFLINE · ")
+            append(UsageDisplay.observed(reading?.observedAtMillis))
         }
         val detail = buildString {
-            append("SAMPLE DATA ONLY — no account connected.\n")
-            append(state)
-            if (sample.remaining != null) {
-                append("\nWeekly: ${sample.remaining}% remaining (sample)")
-                append("\nResets Thursday at 8:00 PM (sample)")
-                append("\n5-hour window: 84% remaining (sample)")
+            if (state.stale) {
+                append(if (reading == null) "OFFLINE — no weekly reading yet\n" else "STALE / OFFLINE — last known reading\n")
             }
-            if (stale && sample.remaining == null) append("\nSTALE / OFFLINE preview badge enabled.")
-            append("\nTap to return to this preview.")
+            if (remaining != null) {
+                append("Weekly allowance: $remaining% remaining\n")
+            } else {
+                append("Weekly allowance unavailable\n")
+            }
+            append(UsageDisplay.reset(reading?.resetsAtSeconds))
+            append("\n")
+            append(UsageDisplay.observed(reading?.observedAtMillis))
+            append("\nTap to open your meter.")
         }
         val notification = Notification.Builder(context, CHANNEL_ID)
-            .setSmallIcon(Icon.createWithBitmap(StatusIconRenderer.render(sample, stale)))
+            .setSmallIcon(Icon.createWithBitmap(StatusIconRenderer.render(remaining, state.stale, readingError)))
             .setContentTitle(title)
-            .setContentText(state)
+            .setContentText(status)
             .setStyle(Notification.BigTextStyle().bigText(detail))
-            .setContentIntent(openPreview)
+            .setContentIntent(openMeter)
+            // Android 14+ can dismiss ongoing notifications. Reuse the existing
+            // receiver to also cancel an update racing the dismissal broadcast.
+            .setDeleteIntent(hide)
             .setCategory(Notification.CATEGORY_STATUS)
             .setVisibility(Notification.VISIBILITY_PRIVATE)
             .setShowWhen(false)
             .setOnlyAlertOnce(true)
             .setOngoing(true)
-            .addAction(Notification.Action.Builder(null, "Hide preview", hide).build())
+            .addAction(Notification.Action.Builder(null, "Hide meter", hide).build())
             .build()
-        manager(context).notify(NOTIFICATION_ID, notification)
+        return try {
+            manager(context).notify(NOTIFICATION_ID, notification)
+            true
+        } catch (_: SecurityException) {
+            // Permission may change between canPost() and the system enqueue.
+            false
+        }
     }
 
+    @Synchronized
     fun hide(context: Context) = manager(context).cancel(NOTIFICATION_ID)
 }
 
@@ -100,4 +136,20 @@ class HideNotificationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         PreviewNotification.hide(context)
     }
+}
+
+/** Shared, local-time text for real readings. Missing timestamps stay missing. */
+internal object UsageDisplay {
+    fun reset(seconds: Long?): String =
+        if (seconds != null && seconds > 0 && seconds <= Long.MAX_VALUE / 1000) {
+            "Resets ${dateTime(seconds * 1000)}"
+        } else {
+            "Reset time unavailable"
+        }
+
+    fun observed(millis: Long?): String =
+        if (millis != null && millis > 0) "Updated ${dateTime(millis)}" else "No successful weekly reading yet"
+
+    private fun dateTime(millis: Long): String =
+        DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(millis))
 }

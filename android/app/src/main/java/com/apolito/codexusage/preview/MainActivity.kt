@@ -2,6 +2,10 @@ package com.apolito.codexusage.preview
 
 import android.Manifest
 import android.app.Activity
+import android.app.NotificationManager
+import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
@@ -9,6 +13,7 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -21,20 +26,32 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
-import android.widget.Switch
 import android.widget.TextView
+import android.widget.Toast
 
-/** A disposable readability spike. This activity never contacts a usage source. */
+/** Account credentials and sign-in stay in OpenAI's external browser flow. */
 class MainActivity : Activity() {
+    private lateinit var scroll: ScrollView
     private lateinit var icon: ImageView
-    private lateinit var sampleDescription: TextView
+    private lateinit var readingDescription: TextView
+    private lateinit var readingDetails: TextView
+    private lateinit var accountStatus: TextView
+    private lateinit var accountMessage: TextView
+    private lateinit var accountAction: Button
+    private lateinit var challengeActions: LinearLayout
+    private lateinit var loginActions: LinearLayout
+    private lateinit var challengeCode: TextView
+    private lateinit var checkLogin: Button
+    private lateinit var refresh: Button
+    private lateinit var signOut: Button
+    private lateinit var showNotification: Button
+    private lateinit var hideNotification: Button
     private lateinit var notificationStatus: TextView
-    private lateinit var staleSwitch: Switch
-    private val sampleButtons = mutableMapOf<PreviewSample, Button>()
-    private var sample = PreviewSample.SEVENTY_TWO
-    private var stale = false
+    private var account = MeterState()
+    private var stopObserving: (() -> Unit)? = null
     private var pendingShow = false
-    private var statusMessage: String? = null
+    private var notificationMessage: String? = null
+    private var browserMessage: String? = null
 
     private val dark get() = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
     private val bgColor get() = Color.parseColor(if (dark) "#15121C" else "#F8F5FC")
@@ -46,14 +63,29 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val preferences = getPreferences(MODE_PRIVATE)
-        sample = PreviewSample.entries.firstOrNull { it.name == preferences.getString("sample", null) }
-            ?: PreviewSample.SEVENTY_TWO
-        stale = preferences.getBoolean("stale", false)
         pendingShow = savedInstanceState?.getBoolean("pendingShow") ?: false
+        account = MeterAccount.state(this)
         PreviewNotification.createChannel(this)
         buildScreen()
         updateScreen()
+        if (account.challenge != null) revealSignIn()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        stopObserving = MeterAccount.observe(this) { state ->
+            val newCode = state.challenge != null && account.challenge != state.challenge
+            account = state
+            if (state.challenge == null) browserMessage = null
+            updateScreen()
+            if (newCode) revealSignIn()
+        }
+    }
+
+    override fun onStop() {
+        stopObserving?.invoke()
+        stopObserving = null
+        super.onStop()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -63,10 +95,9 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        if (::notificationStatus.isInitialized) {
-            statusMessage = null
-            updateScreen()
-        }
+        MeterAccount.resumeLogin(this)
+        account = MeterAccount.state(this)
+        if (::notificationStatus.isInitialized) updateScreen()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -92,7 +123,7 @@ class MainActivity : Activity() {
     }
 
     private fun buildScreen() {
-        val scroll = ScrollView(this).apply {
+        scroll = ScrollView(this).apply {
             setBackgroundColor(bgColor)
             isFillViewport = true
             clipToPadding = false
@@ -112,9 +143,9 @@ class MainActivity : Activity() {
             setPadding(dp(24), dp(24), dp(24), dp(28))
         }
         scroll.addView(column, FrameLayout.LayoutParams(-1, -2))
-        column.addView(text("CODEX USAGE · ANDROID PREVIEW", 12f, accentColor, true))
+        column.addView(text("CODEX USAGE · ANDROID", 12f, accentColor, true))
         column.addView(text("A little number.\nA useful place.", 30f, textColor, true), rowParams(top = 12))
-        column.addView(text("See how the desktop-style percentage reads in your phone’s status bar. Everything here is sample data.", 16f, mutedColor), rowParams(top = 12))
+        column.addView(text("Your weekly Codex allowance, right in your phone’s status bar.", 16f, mutedColor), rowParams(top = 12))
 
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -128,60 +159,102 @@ class MainActivity : Activity() {
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         }
         card.addView(icon, LinearLayout.LayoutParams(dp(80), dp(80)))
-        sampleDescription = text("", 16f, textColor, true).apply { gravity = Gravity.CENTER }
-        card.addView(sampleDescription, rowParams(top = 12))
-        card.addView(text("Enlarged preview · Android controls the actual icon size and tint", 12f, mutedColor).apply { gravity = Gravity.CENTER }, rowParams(top = 6))
-
-        column.addView(text("Choose a sample", 16f, textColor, true), rowParams(top = 24))
-        PreviewSample.entries.chunked(4).forEach { samples ->
-            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-            column.addView(row, rowParams(top = 6))
-            samples.forEachIndexed { index, value ->
-                val button = button(value.label).apply {
-                    textSize = 13f
-                    setPadding(dp(2), 0, dp(2), 0)
-                    contentDescription = if (value.remaining != null) "Sample ${value.remaining} percent remaining" else "Sample ${value.label}"
-                    setOnClickListener {
-                        sample = value
-                        sampleChanged()
-                    }
-                }
-                sampleButtons[value] = button
-                row.addView(button, LinearLayout.LayoutParams(0, -2, 1f).apply {
-                    if (index > 0) marginStart = dp(6)
-                })
-            }
+        readingDescription = text("", 21f, textColor, true).apply {
+            gravity = Gravity.CENTER
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
-        staleSwitch = Switch(this).apply {
-            text = "Stale / offline sample"
-            textSize = 16f
-            setTextColor(textColor)
-            minHeight = dp(56)
-            isChecked = stale
-            setOnCheckedChangeListener { _, checked ->
-                stale = checked
-                sampleChanged()
-            }
-        }
-        column.addView(staleSwitch, rowParams(top = 10))
-        column.addView(text("Stale keeps the last sample number and adds a monochrome × badge. Unknown (?) and error (!) never pretend to be 0%.", 13f, mutedColor), rowParams(top = 2))
+        card.addView(readingDescription, rowParams(top = 12))
+        readingDetails = text("", 14f, mutedColor).apply { gravity = Gravity.CENTER }
+        card.addView(readingDetails, rowParams(top = 8))
 
-        val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        column.addView(actions, rowParams(top = 22))
-        actions.addView(button("Show preview", true).apply { setOnClickListener { requestShow() } }, LinearLayout.LayoutParams(0, -2, 1f))
-        actions.addView(button("Hide").apply {
+        accountStatus = text("", 17f, textColor, true)
+        column.addView(accountStatus, rowParams(top = 24))
+        accountMessage = text("", 14f, mutedColor).apply {
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+        }
+        column.addView(accountMessage, rowParams(top = 8))
+        challengeActions = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        column.addView(challengeActions, rowParams(top = 12))
+        challengeActions.addView(text("ONE-TIME SIGN-IN CODE", 12f, accentColor, true))
+        challengeCode = text("", 26f, textColor, true).apply {
+            setTextIsSelectable(true)
+            setPadding(0, dp(8), 0, dp(8))
+        }
+        challengeActions.addView(challengeCode, rowParams())
+        challengeActions.addView(button("Copy code").apply {
             setOnClickListener {
+                account.challenge?.let { challenge ->
+                    getSystemService(ClipboardManager::class.java).setPrimaryClip(
+                        ClipData.newPlainText("OpenAI one-time sign-in code", challenge.userCode).apply {
+                            description.extras = android.os.PersistableBundle().apply {
+                                putBoolean("android.content.extra.IS_SENSITIVE", true)
+                            }
+                        },
+                    )
+                    Toast.makeText(this@MainActivity, "Sign-in code copied", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }, rowParams())
+        accountAction = button("Sign in with ChatGPT", true).apply {
+            setOnClickListener {
+                browserMessage = null
+                if (account.challenge != null) openSignIn() else MeterAccount.signIn(this@MainActivity)
+            }
+        }
+        column.addView(accountAction, rowParams(top = 12))
+        loginActions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        column.addView(loginActions, rowParams(top = 8))
+        checkLogin = button("Check sign-in").apply {
+            setOnClickListener {
+                browserMessage = null
+                MeterAccount.resumeLogin(this@MainActivity)
+            }
+        }
+        loginActions.addView(checkLogin, LinearLayout.LayoutParams(0, -2, 1f))
+        loginActions.addView(button("Cancel").apply {
+            setOnClickListener {
+                browserMessage = null
+                MeterAccount.cancelLogin(this@MainActivity)
+            }
+        }, LinearLayout.LayoutParams(0, -2, 0.7f).apply { marginStart = dp(8) })
+
+        val accountActions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        column.addView(accountActions, rowParams(top = 12))
+        refresh = button("Refresh").apply {
+            setOnClickListener { MeterAccount.refresh(this@MainActivity) }
+        }
+        accountActions.addView(refresh, LinearLayout.LayoutParams(0, -2, 1f))
+        signOut = button("Sign out").apply {
+            setOnClickListener {
+                pendingShow = false
+                notificationMessage = null
                 PreviewNotification.hide(this@MainActivity)
-                statusMessage = "Preview hidden."
+                MeterAccount.signOut(this@MainActivity)
+            }
+        }
+        accountActions.addView(signOut, LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = dp(8) })
+
+        column.addView(text("In your status bar", 17f, textColor, true), rowParams(top = 24))
+        val notificationActions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        column.addView(notificationActions, rowParams(top = 10))
+        showNotification = button("Show meter", true).apply { setOnClickListener { requestShow() } }
+        notificationActions.addView(showNotification, LinearLayout.LayoutParams(0, -2, 1f))
+        hideNotification = button("Hide").apply {
+            setOnClickListener {
+                pendingShow = false
+                PreviewNotification.hide(this@MainActivity)
+                notificationMessage = "Meter hidden. Tap Show meter to bring it back."
                 updateScreen()
             }
-        }, LinearLayout.LayoutParams(0, -2, 0.55f).apply { marginStart = dp(8) })
-
-        notificationStatus = text("", 14f, mutedColor).apply { accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE }
+        }
+        notificationActions.addView(hideNotification, LinearLayout.LayoutParams(0, -2, 0.55f).apply { marginStart = dp(8) })
+        notificationStatus = text("", 14f, mutedColor).apply {
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+        }
         column.addView(notificationStatus, rowParams(top = 12))
         column.addView(button("Notification settings").apply { setOnClickListener { openNotificationSettings() } }, rowParams(top = 8))
-        column.addView(text("If the number is missing, your phone may hide silent notification icons or limit how many fit. Check the notification settings and your system’s status-bar settings. Newer Android versions may also let you dismiss an ongoing notification; Show preview restores it.", 13f, mutedColor), rowParams(top = 12))
-        column.addView(text("This preview does not connect to your account or show real usage. Tap its notification to return to the sample picker.", 13f, mutedColor), rowParams(top = 18))
+        column.addView(text("The meter updates silently. If you hide or dismiss it, tap Show meter to restore it. Your phone may also hide silent status-bar icons in system settings.", 13f, mutedColor), rowParams(top = 12))
+        column.addView(text("Sign-in and usage refresh run on this phone. Your computer does not need to be on.", 13f, mutedColor), rowParams(top = 18))
         setContentView(scroll)
         // PhoneWindow.getInsetsController() dereferences its decor view on
         // API 30+. Install the content/decor before asking for the controller.
@@ -189,23 +262,46 @@ class MainActivity : Activity() {
         scroll.requestApplyInsets()
     }
 
-    private fun sampleChanged() {
-        getPreferences(MODE_PRIVATE).edit().putString("sample", sample.name).putBoolean("stale", stale).apply()
-        statusMessage = null
-        if (PreviewNotification.isVisible(this) && PreviewNotification.canPost(this)) {
-            postPreview()
+    private fun revealSignIn() {
+        scroll.post { if (account.challenge != null) scroll.smoothScrollTo(0, accountStatus.top - dp(12)) }
+    }
+
+    private fun openSignIn() {
+        val challenge = account.challenge ?: return
+        val uri = Uri.parse(challenge.verificationUrl)
+        // The code belongs only in OpenAI's fixed device sign-in page. Never
+        // launch a server-supplied arbitrary URL or an embedded credential view.
+        if (uri.scheme != "https" || uri.host != "auth.openai.com" ||
+            uri.path != "/codex/device" || uri.userInfo != null || uri.port != -1 ||
+            uri.query != null || uri.fragment != null
+        ) {
+            browserMessage = "The OpenAI sign-in link is unavailable. Cancel and try signing in again."
+            updateScreen()
+            return
+        }
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE))
+            browserMessage = "Finish signing in in your browser, then return here."
+        } catch (_: ActivityNotFoundException) {
+            browserMessage = "No browser is available. Install or enable a browser, then open sign-in again."
         }
         updateScreen()
     }
 
     private fun requestShow() {
-        statusMessage = null
+        notificationMessage = null
+        account = MeterAccount.state(this)
+        if (!account.connected) {
+            notificationMessage = "Sign in with ChatGPT before showing your meter."
+            updateScreen()
+            return
+        }
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             pendingShow = true
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
             return
         }
-        postPreview()
+        postMeter()
         updateScreen()
     }
 
@@ -214,49 +310,100 @@ class MainActivity : Activity() {
         if (requestCode == 1 && pendingShow) {
             pendingShow = false
             if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
-                postPreview()
+                postMeter()
             } else {
-                statusMessage = "Notification permission is off. Enable it in Notification settings, then tap Show preview."
+                notificationMessage = "Notification permission is off. Enable it in Notification settings, then tap Show meter."
             }
             updateScreen()
         }
     }
 
-    private fun postPreview() {
-        if (!PreviewNotification.canPost(this)) {
-            statusMessage = "Notifications or this preview channel are blocked. Open Notification settings to enable them, then tap Show preview."
+    private fun postMeter() {
+        account = MeterAccount.state(this)
+        if (!account.connected) {
+            notificationMessage = "Sign in with ChatGPT before showing your meter."
             return
         }
-        try {
-            PreviewNotification.show(this, sample, stale)
-            // NotificationManager enqueues the post; query again after the
-            // system has had a moment to add it to activeNotifications.
-            notificationStatus.postDelayed({
-                if (!isFinishing && !isDestroyed) updateScreen()
-            }, 250)
-        } catch (_: SecurityException) {
-            statusMessage = "Notification access changed. Check Notification settings, then tap Show preview."
+        if (!PreviewNotification.canPost(this)) {
+            notificationMessage = "Notifications or the meter channel are blocked. Open Notification settings, then tap Show meter."
+            return
         }
+        if (!PreviewNotification.show(this, account)) {
+            notificationMessage = "Notification access changed. Check Notification settings, then tap Show meter."
+            return
+        }
+        notificationMessage = null
+        // NotificationManager enqueues the post; let the system add it to its
+        // active list before reading the visibility back for the screen.
+        notificationStatus.postDelayed({
+            if (!isFinishing && !isDestroyed) updateScreen()
+        }, 250)
     }
 
     private fun updateScreen() {
-        icon.setImageBitmap(StatusIconRenderer.render(sample, stale))
-        sampleDescription.text = sample.description(stale)
-        sampleButtons.forEach { (value, button) ->
-            val selected = sample == value
-            button.isSelected = selected
-            button.backgroundTintList = ColorStateList.valueOf(if (selected) accentColor else surfaceColor)
-            button.setTextColor(if (selected) accentTextColor else textColor)
+        val reading = account.reading.takeIf { account.connected }
+        val remaining = reading?.remaining?.takeIf { it in 0..100 }
+        val readingError = account.connected && reading == null && !account.busy &&
+            (account.stale || account.message != null)
+        icon.setImageBitmap(StatusIconRenderer.render(remaining, account.connected && account.stale, readingError))
+        readingDescription.text = when {
+            !account.connected -> "Your weekly allowance"
+            remaining != null -> "$remaining% remaining"
+            reading == null && account.busy -> "Checking weekly allowance…"
+            else -> "Weekly allowance unavailable"
         }
-        notificationStatus.text = statusMessage ?: when {
-            !PreviewNotification.canPost(this) -> "Notifications are off. Show preview requests access, or use Notification settings."
-            PreviewNotification.isVisible(this) -> "Preview is showing. Pull down to inspect it; selecting another sample updates the same notification."
-            else -> "Preview is hidden. Tap Show preview when you’re ready."
+        readingDetails.text = if (!account.connected) {
+            "Connect with ChatGPT to see your real usage."
+        } else {
+            buildString {
+                if (account.stale) {
+                    append(if (reading == null) "OFFLINE · no weekly reading yet\n" else "STALE / OFFLINE · last known reading\n")
+                }
+                append(UsageDisplay.reset(reading?.resetsAtSeconds))
+                append("\n")
+                append(UsageDisplay.observed(reading?.observedAtMillis))
+            }
+        }
+        accountStatus.text = when {
+            account.connected -> "ChatGPT connected"
+            account.challenge != null -> "Finish connecting in your browser"
+            account.busy -> "Preparing sign-in…"
+            else -> "Connect your ChatGPT account"
+        }
+        accountMessage.text = browserMessage ?: account.message ?: when {
+            account.connected && account.busy -> "Refreshing your weekly allowance…"
+            account.connected && account.stale && reading != null -> "Couldn’t refresh. The last reading stays visible until this phone can connect again."
+            account.connected && account.stale -> "Couldn’t fetch your weekly allowance. Refresh when this phone can connect again."
+            account.connected -> "Refresh here for the latest reading."
+            account.challenge != null -> "Copy the one-time code, open OpenAI in your browser, and enter it there. Return here when you’re done."
+            account.busy -> "Getting a one-time code from OpenAI…"
+            else -> "Sign in on OpenAI’s website in your browser. Your password stays there."
+        }
+        challengeActions.visibility = if (account.challenge != null) View.VISIBLE else View.GONE
+        loginActions.visibility = if (account.challenge != null) View.VISIBLE else View.GONE
+        challengeCode.text = account.challenge?.userCode ?: ""
+        accountAction.visibility = if (account.connected) View.GONE else View.VISIBLE
+        accountAction.text = if (account.challenge != null) "Open ChatGPT sign-in" else "Sign in with ChatGPT"
+        accountAction.isEnabled = account.challenge != null || !account.busy
+        // A challenge remains usable during device-code polling.
+        checkLogin.isEnabled = account.challenge != null
+        refresh.visibility = if (account.connected) View.VISIBLE else View.GONE
+        refresh.isEnabled = account.connected && !account.busy
+        refresh.text = if (account.busy) "Refreshing…" else "Refresh"
+        signOut.visibility = if (account.connected || account.canForget) View.VISIBLE else View.GONE
+        signOut.text = if (account.canForget) "Forget saved sign-in" else "Sign out"
+        showNotification.isEnabled = account.connected
+        hideNotification.isEnabled = PreviewNotification.isVisible(this)
+        notificationStatus.text = notificationMessage ?: when {
+            !account.connected -> "Sign in, then tap Show meter. Nothing is posted automatically."
+            !PreviewNotification.canPost(this) -> "Notifications are off. Show meter requests access, or use Notification settings."
+            PreviewNotification.isVisible(this) -> "Meter is showing. Pull down to see the weekly reset time and reading status."
+            else -> "Meter is hidden. Tap Show meter when you’re ready."
         }
     }
 
     private fun openNotificationSettings() {
-        val intent = if (getSystemService(android.app.NotificationManager::class.java).areNotificationsEnabled()) {
+        val intent = if (getSystemService(NotificationManager::class.java).areNotificationsEnabled()) {
             Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
                 .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
                 .putExtra(Settings.EXTRA_CHANNEL_ID, PreviewNotification.CHANNEL_ID)

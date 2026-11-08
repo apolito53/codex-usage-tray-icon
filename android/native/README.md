@@ -1,9 +1,79 @@
-# Android account-library compile probe
+# Android account libraries
+
+This crate has two mutually exclusive JNI variants, both using the actual pinned
+`codex-login`, `codex-backend-client`, and `codex-http-client` libraries. The crate
+and shared-library names retain their original probe names for build compatibility.
+
+## Production account variant
+
+Build the Android account library with the existing toolchain setup:
+
+```bash
+PROBE_VARIANT=account PROBE_ACTION=build bash check-android.sh --release
+PROBE_VARIANT=account PROBE_TARGET=x86_64-linux-android PROBE_ACTION=build bash check-android.sh --release
+```
+
+This selects `prepare-upstream.sh --account` and Cargo's `--features account`.
+Ordinary builds retain `--locked`. The production feature excludes all offline,
+synthetic-storage, and fault-injection JNI entry points. Its only JNI surface is
+`com.apolito.codexusage.preview.NativeAccount`:
+
+- `initialize(platform, home)` restores an encrypted saved account without network
+  traffic. Repeated calls return the current process session; they do not simulate
+  a restart. Invalid/unreadable storage is preserved for explicit Forget/sign-out.
+- `startLogin()` and `finishLogin(attempt)` call upstream device-code request,
+  polling, PKCE exchange, token parsing and persistence code. They never run the
+  browser/callback server. The app shows the returned verification URL and code.
+- `cancelLogin(attempt)` revokes that attempt and interrupts its polling future.
+  If that same attempt already won credential promotion, it returns
+  `connected:true`, allowing the app to finish the explicit cancellation by signing
+  out. A late response/error cannot clear a different attempt or account.
+- `readUsage()` uses upstream managed auth/proactive refresh and passive
+  `get_rate_limits()`. A 401 gets one managed refresh and one retry. Rotated
+  credentials are durably vaulted before use. Only a window explicitly equal to
+  10,080 minutes is reported as weekly; other windows produce null weekly values.
+  Generic 403 and transport failures preserve the renewable saved grant.
+- `signOut()` removes the encrypted local grant/key before attempting upstream
+  revocation against a detached in-memory snapshot. `revocationConfirmed` is true
+  only for that snapshot's observed HTTP 200/204. Offline/failed revocation remains
+  an honest false and does not undo local removal. This method also supports
+  explicit recovery from an unreadable or logically invalid stored record.
+
+All upstream credential storage uses `AuthCredentialsStoreMode::Ephemeral`, under
+unique attempt/session keys. No production path reads or writes `auth.json`.
+A generation check and one mutex serialize Android vault promotion with
+cancellation, sign-out and replacement login. Existing requests use revoked
+upstream network permits after an identity change. Upstream's in-flight blocking
+work can finish in process memory, but cannot promote stale credentials to the
+vault. The Android vault uses the production Keystore namespace, authenticated
+encryption, same-directory atomic replacement and durable storage ordering.
+
+`NativeAccount` returns sanitized JSON envelopes with stable error codes. It never
+returns tokens, user/account identifiers, response payloads or exception messages.
+When both user and workspace identities are available, `accountKey` is an opaque
+SHA-256 cache-owner key; it remains stable when tokens rotate. The distinct
+`codex_usage_meter_android` originator is installed before creating login clients.
+
+Account builds apply the reviewed [Android HTTPS seam](patches/README.md) to the
+pinned HTTP crate. Every Android routed/direct execution uses the registered
+platform callback, after upstream headers and policy checks. The platform uses
+Android's ordinary `HttpsURLConnection` trust and routing, restricted account
+endpoints, no automatic redirects/cookies, bounded response sizes and deadlines.
+No native socket fallback exists. Preparation verifies the exact resulting Git
+blob hashes and rejects any additional upstream edits. Upstream licenses/notices
+remain under `licenses/` and `notices/` and accompany distributed builds.
+
+## Offline laboratory variant (default)
+
+The default build below is the historical offline lab. The Android meter
+build selects `PROBE_VARIANT=account`, with the production JNI entry points
+in `src/account.rs` and the Android HTTPS transport patch in `patches/`.
+Use the [meter build instructions](../README.md) for a signed-in phone.
 
 This experiment links the actual `codex-login`, `codex-backend-client`, and
 `codex-http-client` crates from OpenAI Codex commit
 `8f195c93d7e7acfef95acf273f0e49cce917e291`. It does not run app-server or import
-`codex-core`. Upstream source is unchanged.
+`codex-core`. Upstream source is unchanged in this default laboratory variant.
 
 It contains two offline synthetic diagnostics, not a functional sign-in
 implementation. `NativeProbe.run()` parses one fixed unsigned synthetic JWT and calls the upstream
@@ -27,7 +97,8 @@ the linked request code up to its application-policy denial boundary.
 `prepare-upstream.sh` creates an ignored checkout at `.upstream/codex`, pinned by
 `upstream-revision.txt`, with all of `codex-rs` materialized. The relative paths
 in `Cargo.toml` point at its original crate manifests. The build script checks
-the source revision and rejects a modified checkout before compiling.
+the source revision and rejects a modified checkout before compiling; account mode
+permits only the exact reviewed Android transport patch described above.
 
 Use Rust 1.95.0 with `aarch64-linux-android` and `x86_64-linux-android` targets,
 Android NDK 28.2.13676358, and API 26. The build script limits jobs to two and
@@ -47,7 +118,7 @@ update; ordinary verification uses `--locked`. Upstream's relevant Cargo patches
 are repeated because Cargo does not inherit patches from a path dependency's
 workspace. The unused `crossterm` patch warning is expected.
 
-## Actual build findings
+## Recorded offline laboratory findings
 
 `cargo check --locked --target aarch64-linux-android` passes with the NDK and
 vendored-OpenSSL setup below. No upstream Rust source or manifest was modified.
