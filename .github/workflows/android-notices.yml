@@ -1,0 +1,51 @@
+name: Android dependency notices
+on:
+  push:
+    branches: [main, codex/android-account]
+    paths:
+      - 'android/native/Cargo.toml'
+      - 'android/native/Cargo.lock'
+      - 'android/native/upstream-revision.txt'
+      - 'android/native/licenses/**'
+      - '.github/workflows/android-notices.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notices:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Collect notices from pinned sources
+        working-directory: android/native
+        run: |
+          rustup toolchain install 1.95.0 --profile minimal --component rust-docs
+          bash prepare-upstream.sh --account
+          for target in aarch64-linux-android x86_64-linux-android; do
+            cargo +1.95.0 metadata --locked --features account --format-version 1 --filter-platform "$target" > "$RUNNER_TEMP/$target.json"
+          done
+          ndk="$ANDROID_HOME/ndk/28.2.13676358"
+          test -d "$ndk" || "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;28.2.13676358"
+          set +e
+          python3 licenses/collect_notices.py \
+            --metadata "aarch64-linux-android=$RUNNER_TEMP/aarch64-linux-android.json" \
+            --metadata "x86_64-linux-android=$RUNNER_TEMP/x86_64-linux-android.json" \
+            --upstream-root .upstream/codex --rust-doc-root "$(rustc +1.95.0 --print sysroot)/share/doc/rust" \
+            --ndk-root "$ndk" --fetch-missing --output "$RUNNER_TEMP/native-notices" > "$RUNNER_TEMP/notice-report.json"
+          result=$?
+          set -e
+          # Exit 2 carries a completed archive with a coverage report for maintainer review.
+          if [[ "$result" != 0 && "$result" != 2 ]]; then exit "$result"; fi
+          mkdir -p "$RUNNER_TEMP/pack/notices"
+          cp "$RUNNER_TEMP/native-notices.zip" "$RUNNER_TEMP/notice-report.json" "$RUNNER_TEMP/pack/notices/"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: account-notices
+          path: ${{ runner.temp }}/pack
+          if-no-files-found: error
+          retention-days: 7
