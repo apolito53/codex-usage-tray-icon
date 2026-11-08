@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+from functools import lru_cache
 import hashlib
 import json
 import os
@@ -27,10 +28,72 @@ NOTICE_NAME = re.compile(r"(?:^|[._ -])(licen[cs]e|copying|copyright|notice|auth
 LICENSE_NAME = re.compile(r"(?:^|[._ -])(licen[cs]e|copying)(?:$|[._ -])", re.I)
 SKIP_DIRS = {".git", ".upstream", ".gradle", ".kotlin", "target", "node_modules", "__pycache__"}
 MAX_NOTICE_BYTES = 8 * 1024 * 1024
+MISSING_LICENSE_TEXT = "No source-provided license text found; SPDX declaration alone is not a substitute"
+LICENSE_DIRECTORY_TEXTS = {"mit.txt", "apache-2.0.txt"}
 
 
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def has_license_text(record: dict) -> bool:
+    for item in record["files"]:
+        path = PurePosixPath(item["path"])
+        if LICENSE_NAME.search(path.name) or item.get("content_kind") == "full-license-text":
+            return True
+        # These authentic upstream filenames were already collected, but the
+        # basename-only check missed them. A README inside LICENSES is not text.
+        if path.name.lower() in LICENSE_DIRECTORY_TEXTS and any(p.lower() in {"licenses", "licences"} for p in path.parts[:-1]):
+            return True
+    return False
+
+
+@lru_cache(maxsize=1)
+def reviewed_source_specs() -> dict:
+    source = Path(__file__).with_name("reviewed-source-notices.json")
+    data = json.loads(source.read_text(encoding="utf-8"))
+    return {(item["name"], item["version"]): item for item in data["packages"]}
+
+
+def add_reviewed_source_notices(output: Path, record: dict, read_source) -> int:
+    """Preserve only reviewed, hash-matching spans of exact published versions.
+
+    Copyright/license-reference headers remain separate from full license text.
+    read_source accepts a crate-relative path and returns its original bytes.
+    """
+    spec = reviewed_source_specs().get((record["name"], record["version"]))
+    if spec is None or not (record.get("source") or "").startswith("registry+"):
+        return 0
+    record["source_notice_review"] = {"finding": spec["finding"], "source_archive_sha256": spec["source_archive_sha256"]}
+    added = 0
+    for notice in spec["source_notices"]:
+        path = notice["source_path"]
+        data = read_source(path)
+        if sha256(data) != notice["source_file_sha256"]:
+            raise ValueError(f"Reviewed source hash mismatch: {record['name']} {record['version']} {path}")
+        first, last = notice["source_lines"]
+        selected = b"".join(data.splitlines(keepends=True)[first - 1:last])
+        if sha256(selected) != notice["notice_sha256"]:
+            raise ValueError(f"Reviewed source span mismatch: {record['name']} {record['version']} {path}")
+        relative = f"reviewed-source/{path}.lines-{first}-{last}.txt"
+        previous = next((item for item in record["files"] if item["path"] == relative), None)
+        if previous is not None:
+            if previous["sha256"] != sha256(selected):
+                raise ValueError(f"Conflicting existing source notice: {relative}")
+            continue
+        provenance = {
+            "origin": "verbatim-reviewed-published-source",
+            "content_kind": notice["content_kind"],
+            "source_path": path,
+            "source_lines": [first, last],
+            "source_file_sha256": sha256(data),
+            "source_archive_sha256": spec["source_archive_sha256"],
+            "source_archive": record.get("source_archive"),
+            "source_url": f"https://docs.rs/crate/{record['name']}/{record['version']}/source/{urllib.parse.quote(path)}",
+        }
+        add_file(output, record, None, relative, provenance, selected)
+        added += 1
+    return added
 
 
 def file_candidates(root: Path):
@@ -162,6 +225,28 @@ def collect_metadata(args):
     return collected
 
 
+def write_bundle(output: Path, index: dict) -> dict:
+    """Write a new deterministic archive without changing any input bundle."""
+    archive = Path(str(output) + ".zip")
+    if archive.exists():
+        raise ValueError(f"Archive already exists: {archive}")
+    gaps = index["coverage_gaps"]
+    (output / "index.json").write_text(json.dumps(index, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    lines = ["# Native dependency notices", "", index["scope"], "", "This bundle preserves source-provided license and notice texts, with hashes and provenance in `index.json`. It does not certify legal completeness. No license alternatives are automatically selected.", "", "Reviewed source excerpts distinguish complete license text from copyright or license references. Reference-only excerpts do not clear a missing-text gap.", "", "## Missing source-provided license texts", ""]
+    lines.extend(f"- {g['package']}: {'; '.join(g['gaps'])}" for g in gaps)
+    if not gaps:
+        lines.append("No package-level license-text gaps detected by the collector. Embedded notices still require human review.")
+    (output / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as bundle:
+        for path in sorted(output.rglob("*")):
+            if path.is_file():
+                info = zipfile.ZipInfo(path.relative_to(output).as_posix(), (1980, 1, 1, 0, 0, 0))
+                info.compress_type = zipfile.ZIP_DEFLATED
+                info.external_attr = 0o100644 << 16
+                bundle.writestr(info, path.read_bytes())
+    return {"output": str(output), "archive": str(archive), "archive_sha256": sha256(archive.read_bytes()), "packages": len(index["packages"]), "coverage_gap_count": len(gaps), "coverage_gaps": gaps}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path, help="New or empty output directory; never overwrites a prior bundle")
@@ -239,7 +324,8 @@ def main():
             if sqlite.is_file():
                 data = b"".join(sqlite.read_bytes().splitlines(keepends=True)[:45])
                 add_file(output, record, None, "source-notices/sqlite3-first-45-lines.txt", {"origin": "verbatim-source-header", "source_path": "sqlite3/sqlite3.c", "source_lines": [1, 45]}, data)
-        has_license = any(LICENSE_NAME.search(PurePosixPath(f["path"]).name) for f in record["files"])
+        add_reviewed_source_notices(output, record, lambda relative: (root / relative).read_bytes())
+        has_license = has_license_text(record)
         if not has_license and not record["is_probe_root"]:
             missing.append((record, vcs))
         records.append(record)
@@ -261,8 +347,8 @@ def main():
                 record["supplement_fetch_notes"] = result["errors"]
 
     for record, _ in missing:
-        if not any(LICENSE_NAME.search(PurePosixPath(f["path"]).name) for f in record["files"]):
-            record["coverage_gaps"].append("No source-provided license text found; SPDX declaration alone is not a substitute")
+        if not has_license_text(record):
+            record["coverage_gaps"].append(MISSING_LICENSE_TEXT)
     toolchains = []
     if args.rust_doc_root:
         record = {"name": "Rust standard library", "directory": "toolchains/rust", "files": []}
@@ -279,20 +365,7 @@ def main():
         toolchains.append(record)
     gaps = [{"package": f"{r['name']} {r['version']}", "gaps": r["coverage_gaps"]} for r in records if r["coverage_gaps"]]
     index = {"schema_version": 1, "scope": "Reachable target-filtered Cargo dependency graph, including build dependencies; conservative superset of linked code.", "limitations": ["Collection of notice-like files is not a legal completeness or license compatibility determination.", "Embedded source comments and custom naming may require further review.", "Some included build dependencies and vendored source components may not be distributed in the APK.", "Source archives and repository revisions identify unmodified third-party sources; no license option is selected automatically."], "inputs": metadata_index, "package_count": len(records), "packages": records, "toolchains": toolchains, "coverage_gap_count": len(gaps), "coverage_gaps": gaps}
-    (output / "index.json").write_text(json.dumps(index, indent=2, ensure_ascii=False) + "\n")
-    lines = ["# Native dependency notices", "", index["scope"], "", "This bundle preserves source-provided license and notice texts, with hashes and provenance in `index.json`. It does not certify legal completeness. No license alternatives are automatically selected.", "", "## Missing source-provided license texts", ""]
-    lines.extend(f"- {g['package']}: {'; '.join(g['gaps'])}" for g in gaps)
-    if not gaps:
-        lines.append("No package-level license-text gaps detected by the collector. Embedded notices still require human review.")
-    (output / "README.md").write_text("\n".join(lines) + "\n")
-    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as bundle:
-        for path in sorted(output.rglob("*")):
-            if path.is_file():
-                info = zipfile.ZipInfo(path.relative_to(output).as_posix(), (1980, 1, 1, 0, 0, 0))
-                info.compress_type = zipfile.ZIP_DEFLATED
-                info.external_attr = 0o100644 << 16
-                bundle.writestr(info, path.read_bytes())
-    print(json.dumps({"output": str(output), "archive": str(archive), "archive_sha256": sha256(archive.read_bytes()), "packages": len(records), "coverage_gap_count": len(gaps), "coverage_gaps": gaps}, indent=2))
+    print(json.dumps(write_bundle(output, index), indent=2))
     return 2 if gaps else 0
 
 

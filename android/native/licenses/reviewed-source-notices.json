@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "review_scope": "Exact versions among the 16 remaining full-text gaps in native-notices.zip SHA-256 5c6ccb3156c780281a7164294b0b78bce25f26b727c24f4421fb6281068fc434; all crate archive hashes verified against android/native/Cargo.lock.",
+  "packages": [
+    {
+      "name": "allocative",
+      "version": "0.3.6",
+      "source_archive_sha256": "d8cf9afc79c83d514444b55df3935d317da54b1ce3b17a133c646889cc260de8",
+      "source_notices": [
+        {
+          "source_path": "src/lib.rs",
+          "source_lines": [
+            1,
+            9
+          ],
+          "source_file_sha256": "6c170a02dc0f1c4e12a04437adcd21ae20a57864372a1b77c398f07a8c268058",
+          "notice_sha256": "b26f6338741265dfe17c0f56d34a3058e7ac784908122acbe89729a5cdea0871",
+          "content_kind": "copyright-and-license-reference"
+        }
+      ],
+      "finding": "Preserve verbatim published source attribution or license references; these excerpts do not substitute for missing complete license texts."
+    },
+    {
+      "name": "allocative_derive",
+      "version": "0.3.6",
+      "source_archive_sha256": "614043c56c1173b800acb007b81fd0cbc0a0d7d717b71ba705fc2230d0760a23",
+      "source_notices": [
+        {
+          "source_path": "src/lib.rs",
+          "source_lines": [
+            1,
+            9
+          ],
+          "source_file_sha256": "369248b0133e83f17685b29786c185a41bc6b93fd4fac6abd6f751436a26e778",
+          "notice_sha256": "b26f6338741265dfe17c0f56d34a3058e7ac784908122acbe89729a5cdea0871",
+          "content_kind": "copyright-and-license-reference"
+        }
+      ],
+      "finding": "Preserve verbatim published source attribution or license references; these excerpts do not substitute for missing complete license texts."
+    },
+    {
+      "name": "bech32",
+      "version": "0.9.1",
+      "source_archive_sha256": "d86b93f97252c47b41663388e6d155714a9d0c398b99f1005cbc5f978b29f445",
+      "source_notices": [
+        {
+          "source_path": "src/lib.rs",
+          "source_lines": [
+            1,
+            19
+          ],
+          "source_file_sha256": "8a4efd91229148ea1e86234c9513628910a7419a3c8a6500e8ce18149b8f3a85",
+          "notice_sha256": "74375f18b087dc11b0d356d423601acf4bcfc2bc86ac95dc72336d362f869f0d",
+          "content_kind": "full-license-text"
+        }
+      ],
+      "finding": "The published src/lib.rs contains the complete copyright, MIT permission grant, and disclaimer in lines 1-19."
+    },
+    {
+      "name": "cesu8",
+      "version": "1.1.0",
+      "source_archive_sha256": "6d43a04d8753f35258c91f8ec639f792891f748a1edbd759cf1dcea3382ad83c",
+      "source_notices": [
+        {
+          "source_path": "src/lib.rs",
+          "source_lines": [
+            1,
+            8
+          ],
+          "source_file_sha256": "402f647c80ccaa86f43a5571cc081aa66777d2a538ce9d9dc52a7e588ef137c9",
+          "notice_sha256": "869f33d1c6a0c94b3200413d8c9ebdfe50351d7f69b250962758400b0d295f3d",
+          "content_kind": "copyright-and-license-reference"
+        },
+        {
+          "source_path": "src/unicode.rs",
+          "source_lines": [
+            1,
+            8
+          ],
+          "source_file_sha256": "66cc902b4dd323cef600890b6cd99186592919b03e55e3535adf0c5b95a8ce45",
+          "notice_sha256": "26b6be649244dcf3ade7fc02879afa87529f8da2214ecc4d24f7ef0d591601fd",
+          "content_kind": "copyright-and-license-reference"
+        }
+      ],
+      "finding": "Preserve verbatim published source attribution or license references; these excerpts do not substitute for missing complete license texts."
+    },
+    {
+      "name": "cookie-factory",
+      "version": "0.3.3",
+      "source_archive_sha256": "9885fa71e26b8ab7855e2ec7cae6e9b380edff76cd052e07c683a0319d51b3a2",
+      "source_notices": [],
+      "finding": "Authentic LICENSES/MIT.txt or LICENSES/Apache-2.0.txt was already bundled; basename-only coverage detection missed it."
+    },
+    {
+      "name": "crc-catalog",
+      "version": "2.4.0",
+      "source_archive_sha256": "19d374276b40fb8bbdee95aef7c7fa6b5316ec764510eb64b8dd0e2ed0d7e7f5",
+      "source_notices": [],
+      "finding": "Authentic LICENSES/MIT.txt or LICENSES/Apache-2.0.txt was already bundled; basename-only coverage detection missed it."
+    },
+    {
+      "name": "debugserver-types",
+      "version": "0.5.0",
+      "source_archive_sha256": "2bf6834a70ed14e8e4e41882df27190bea150f1f6ecf461f1033f8739cd8af4a",
+      "source_notices": [],
+      "finding": "Pinned published crate and repository revision have a MIT declaration but no located complete license text; no newer branch text substituted."
+    },
+    {
+      "name": "display_container",
+      "version": "0.9.0",
+      "source_archive_sha256": "0a110a75c96bedec8e65823dea00a1d710288b7a369d95fd8a0f5127639466fa",
+      "source_notices": [
+        {
+          "source_path": "src/lib.rs",
+          "source_lines": [
+            1,
+            8
+          ],
+          "source_file_sha256": "13db2d71c93e61a6e9bdf52597a204f1ca6d017f68d0efb15c0598084b96add5",
+          "notice_sha256": "b9c31b3ea28f921ee78084f32b81c9b89c19e4d79017522f00c252bfdb9afbd1",
+          "content_kind": "copyright-and-license-reference"
+        }
+      ],
+      "finding": "Preserve verbatim published source attribution or license references; these excerpts do not substitute for missing complete license texts."
+    },
+    {
+      "name": "eventsource-stream",
+      "version": "0.2.3",
+      "source_archive_sha256": "74fef4569247a5f429d9156b9d0a2599914385dd189c539334c625d8099d90ab",
+      "source_notices": [
+        {
+          "source_path": "README.md",
+          "source_lines": [
+            22,
+            22
+          ],
+          "source_file_sha256": "f17f6cc26f19643dbadaaad9901d245d4645ef8fbac8266b33105392dd1f8601",
+          "notice_sha256": "12a47d7d4733ef2a03594f61558c5ec97336af894b2ebbc062fd31014de3a363",
+          "content_kind": "license-reference"
+        }
+      ],
+      "finding": "Preserve verbatim published source attribution or license references; these excerpts do not substitute for missing complete license texts."
+    },
+    {
+      "name": "fxhash",
+      "version": "0.2.1",
+      "source_archive_sha256": "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c",
+      "source_notices": [
+        {
+          "source_path": "lib.rs",
+          "source_lines": [
+            1,
+            9
+          ],
+          "source_file_sha256": "885b72a1c977dc1c3ff4e0652719e62b6d8c3e713403e571afd581283f72df7b",
+          "notice_sha256": "5d392ff1ac69a18c9beb41720ecbfd56f7792a1ec4321428e73757d4283f5a61",
+          "content_kind": "copyright-and-license-reference"
+        }
+      ],
+      "finding": "Preserve verbatim published source attribution or license references; these excerpts do not substitute for missing complete license texts."
+    },
+    {
+      "name": "io_tee",
+      "version": "0.1.1",
+      "source_archive_sha256": "4b3f7cef34251886990511df1c61443aa928499d598a9473929ab5a90a527304",
+      "source_notices": [
+        {
+          "source_path": "README.md",
+          "source_lines": [
+            11,
+            19
+          ],
+          "source_file_sha256": "0ba20a4b5d8188a85014c5f6d52b5407aec2077986c05f6ba686f9899b767b95",
+          "notice_sha256": "9de286725450e7036d60c1afd456252280d5c444b2554fb05f66afb93af81387",
+          "content_kind": "license-reference"
+        }
+      ],
+      "finding": "Preserve verbatim published source attribution or license references; these excerpts do not substitute for missing complete license texts."
+    },
+    {
+      "name": "lock_free_hashtable",
+      "version": "0.1.4",
+      "source_archive_sha256": "ebf3631712f5b790675292ff827af269f5d9f920c920b77dc41d0485e3719612",
+      "source_notices": [
+        {
+          "source_path": "src/lib.rs",
+          "source_lines": [
+            1,
+            9
+          ],
+          "source_file_sha256": "fbb09de705f0221006441738152312dc1254b922a087ded4c2f66ba828aedd4a",
+          "notice_sha256": "b26f6338741265dfe17c0f56d34a3058e7ac784908122acbe89729a5cdea0871",
+          "content_kind": "copyright-and-license-reference"
+        }
+      ],
+      "finding": "Preserve verbatim published source attribution or license references; these excerpts do not substitute for missing complete license texts."
+    },
+    {
+      "name": "pagable_derive",
+      "version": "0.4.1",
+      "source_archive_sha256": "838d17166587914f4e99353766c29160462b681511f08679545a0d07a0dc9415",
+      "source_notices": [
+        {
+          "source_path": "src/lib.rs",
+          "source_lines": [
+            1,
+            9
+          ],
+          "source_file_sha256": "d5a6ac09935f885f642c9d71b6b02a18d8fe4553ec46d322b76ddb3eb29d87b0",
+          "notice_sha256": "b26f6338741265dfe17c0f56d34a3058e7ac784908122acbe89729a5cdea0871",
+          "content_kind": "copyright-and-license-reference"
+        }
+      ],
+      "finding": "Preserve verbatim published source attribution or license references; these excerpts do not substitute for missing complete license texts."
+    },
+    {
+      "name": "static_interner",
+      "version": "0.1.2",
+      "source_archive_sha256": "fab44341fbf4deae6e8d5ab450f24e1b34e0b2439d39ac0e9b5215a4e5493263",
+      "source_notices": [
+        {
+          "source_path": "src/lib.rs",
+          "source_lines": [
+            1,
+            9
+          ],
+          "source_file_sha256": "f8859299d67a5478a2038910f446e1104447c47314dc3bb276746e3924df06ac",
+          "notice_sha256": "b26f6338741265dfe17c0f56d34a3058e7ac784908122acbe89729a5cdea0871",
+          "content_kind": "copyright-and-license-reference"
+        }
+      ],
+      "finding": "Preserve verbatim published source attribution or license references; these excerpts do not substitute for missing complete license texts."
+    },
+    {
+      "name": "strong_hash",
+      "version": "0.1.0",
+      "source_archive_sha256": "0831334aea34390b6b6ec7af0a27f9ee6324ad3a69463e6b240d83d6b7bce9c9",
+      "source_notices": [
+        {
+          "source_path": "src/lib.rs",
+          "source_lines": [
+            1,
+            9
+          ],
+          "source_file_sha256": "f5fa77466c86ef7b8d7a5af2f034067a543431fd1047d38d9fcf66cb4ede43d7",
+          "notice_sha256": "b26f6338741265dfe17c0f56d34a3058e7ac784908122acbe89729a5cdea0871",
+          "content_kind": "copyright-and-license-reference"
+        }
+      ],
+      "finding": "Preserve verbatim published source attribution or license references; these excerpts do not substitute for missing complete license texts."
+    },
+    {
+      "name": "strong_hash_derive",
+      "version": "0.1.0",
+      "source_archive_sha256": "ace6b48b7c4383a39bd3b966cca41bc999003aab9f690a2f355525c924296928",
+      "source_notices": [
+        {
+          "source_path": "src/lib.rs",
+          "source_lines": [
+            1,
+            9
+          ],
+          "source_file_sha256": "391f35b3f1387f7408b135b95458d52eab89713f52f76553254c4dddc54a6185",
+          "notice_sha256": "b26f6338741265dfe17c0f56d34a3058e7ac784908122acbe89729a5cdea0871",
+          "content_kind": "copyright-and-license-reference"
+        }
+      ],
+      "finding": "Preserve verbatim published source attribution or license references; these excerpts do not substitute for missing complete license texts."
+    }
+  ]
+}
