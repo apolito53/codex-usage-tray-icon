@@ -1,0 +1,52 @@
+name: Android native library
+on:
+  push:
+    branches: [main, codex/android-account]
+    paths:
+      - 'android/native/**'
+      - 'android/build-native.sh'
+      - '.github/workflows/android-native.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-linux-android
+            abi: arm64-v8a
+          - target: x86_64-linux-android
+            abi: x86_64
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install pinned Android and Rust tools
+        run: |
+          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -d "$ANDROID_HOME/ndk/28.2.13676358" || "$sdkmanager" "ndk;28.2.13676358"
+          rustup toolchain install 1.95.0 --profile minimal --target ${{ matrix.target }}
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            android/native/target
+          key: codex-android-v1-${{ matrix.abi }}-${{ hashFiles('android/native/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            codex-android-v1-${{ matrix.abi }}-${{ hashFiles('android/native/Cargo.lock') }}-
+            codex-android-v1-${{ matrix.abi }}-
+      - name: Build Android library
+        run: bash android/build-native.sh ${{ matrix.target }} ${{ runner.temp }}/account-lib
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: account-lib-${{ matrix.abi }}
+          path: ${{ runner.temp }}/account-lib
+          if-no-files-found: error
+          retention-days: 7
