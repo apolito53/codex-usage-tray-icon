@@ -1,8 +1,18 @@
 //! Offline Android compile/link probe for two actual pinned Codex libraries.
 //! The network probe does not open auth storage. A separate probe stores fixed fixtures only.
 
+#[cfg(not(feature = "account"))]
 mod android_keyring;
+#[cfg(not(feature = "account"))]
 mod storage_probe;
+
+#[cfg(all(feature = "account", target_os = "android"))]
+mod account;
+#[cfg(all(feature = "account", target_os = "android"))]
+mod account_platform;
+
+#[cfg(not(feature = "account"))]
+mod laboratory {
 
 use codex_backend_client::Client;
 use codex_http_client::{HttpClientFactory, NetworkPolicyController, OutboundProxyPolicy};
@@ -95,3 +105,7 @@ pub extern "system" fn Java_com_apolito_codexusage_preview_NativeProbe_run(
         }
     }
 }
+}
+
+#[cfg(not(feature = "account"))]
+pub use laboratory::offline_probe;

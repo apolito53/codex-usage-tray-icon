@@ -9,7 +9,16 @@ case "$target" in
   *) echo "Unsupported Android target: $target" >&2; exit 2 ;;
 esac
 export ANDROID_NDK_HOME=${ANDROID_NDK_HOME:-${ANDROID_HOME:?Set ANDROID_HOME}/ndk/28.2.13676358}
-export PROBE_TARGET=$target PROBE_ACTION=build
+export PROBE_TARGET=$target PROBE_ACTION=build PROBE_VARIANT=account
 bash "$android/native/check-android.sh" --release
 mkdir -p "$output/$abi"
-cp "$android/native/target/$target/release/libcodex_android_native_probe.so" "$output/$abi/"
+lib="$android/native/target/$target/release/libcodex_android_native_probe.so"
+symbols="$("$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm" -D --defined-only "$lib")"
+for method in initialize startLogin finishLogin cancelLogin readUsage signOut; do
+  grep -q " Java_com_apolito_codexusage_preview_NativeAccount_${method}$" <<<"$symbols"
+done
+if grep -q 'Java_com_apolito_codexusage_preview_Native\(Storage\)\?Probe_' <<<"$symbols"; then
+  echo "The account library includes a laboratory entry point." >&2
+  exit 1
+fi
+cp "$lib" "$output/$abi/"

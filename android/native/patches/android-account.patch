@@ -1,0 +1,152 @@
+diff --git a/codex-rs/http-client/src/android_platform.rs b/codex-rs/http-client/src/android_platform.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..d3e012ab50d1f743dd475885a2ab284c5750aa4e
+--- /dev/null
++++ b/codex-rs/http-client/src/android_platform.rs
+@@ -0,0 +1,100 @@
++//! Android embedding seam. The host MUST use the platform HTTPS implementation,
++//! with redirects disabled; upstream retains destination permits and redirect policy.
++//! This module intentionally contains no network transport or fallback of its own.
++
++use reqwest::ResponseBuilderExt;
++use std::sync::{Arc, OnceLock};
++use std::time::Duration;
++
++pub struct AndroidHttpRequest {
++    pub method: String,
++    pub url: String,
++    /// Duplicate header values are retained in their original order.
++    pub headers: Vec<(String, String)>,
++    pub body: Option<Vec<u8>>,
++    pub timeout: Option<Duration>,
++}
++
++pub struct AndroidHttpResponse {
++    pub status: u16,
++    pub headers: Vec<(String, String)>,
++    pub body: Vec<u8>,
++}
++
++type PlatformTransport =
++    dyn Fn(AndroidHttpRequest) -> Result<AndroidHttpResponse, ()> + Send + Sync;
++
++static TRANSPORT: OnceLock<Arc<PlatformTransport>> = OnceLock::new();
++
++/// One process-wide transport; a later caller cannot replace the account's bridge.
++pub fn install_android_http_transport(
++    transport: impl Fn(AndroidHttpRequest) -> Result<AndroidHttpResponse, ()> + Send + Sync + 'static,
++) -> Result<(), ()> {
++    TRANSPORT.set(Arc::new(transport)).map_err(|_| ())
++}
++
++// reqwest exposes no public error constructor. An invalid, fixed URL creates a
++// sanitized builder error without ever attempting I/O. It is deliberately not a
++// TLS/connect error, so upstream's TLS fallback will not retry the platform call.
++fn unavailable() -> reqwest::Error {
++    reqwest::Client::new()
++        .get("http://[codex-android-platform-unavailable")
++        .build()
++        .expect_err("the fixed invalid URL must fail before transport")
++}
++
++pub(crate) async fn execute(request: reqwest::Request) -> Result<reqwest::Response, reqwest::Error> {
++    let transport = TRANSPORT.get().cloned().ok_or_else(unavailable)?;
++    // Credentials must never be sent through a non-HTTPS scheme or URL userinfo.
++    if request.url().scheme() != "https"
++        || !request.url().username().is_empty()
++        || request.url().password().is_some()
++    {
++        return Err(unavailable());
++    }
++    let body = request
++        .body()
++        .map(|body| body.as_bytes().map(<[u8]>::to_vec).ok_or_else(unavailable))
++        .transpose()?;
++    let headers = request
++        .headers()
++        .iter()
++        .map(|(name, value)| {
++            value
++                .to_str()
++                .map(|value| (name.as_str().to_owned(), value.to_owned()))
++                .map_err(|_| unavailable())
++        })
++        .collect::<Result<Vec<_>, _>>()?;
++    let url = request.url().clone();
++    let timeout = request.timeout().copied();
++    let input = AndroidHttpRequest {
++        method: request.method().as_str().to_owned(),
++        url: url.as_str().to_owned(),
++        headers,
++        body,
++        timeout,
++    };
++    // Blocking JNI/platform I/O does not monopolize the caller's Tokio executor.
++    // A revoked permit can drop this future; no callback persists credentials.
++    let operation = tokio::task::spawn_blocking(move || transport(input));
++    let output = match timeout {
++        Some(timeout) => tokio::time::timeout(timeout, operation)
++            .await
++            .map_err(|_| unavailable())?,
++        None => operation.await,
++    }
++    .map_err(|_| unavailable())?
++    .map_err(|_| unavailable())?;
++    if !(100..=599).contains(&output.status) || output.body.len() > 1_048_576 {
++        return Err(unavailable());
++    }
++    let mut response = http::Response::builder().status(output.status).url(url);
++    for (name, value) in output.headers {
++        response = response.header(name, value);
++    }
++    response
++        .body(output.body)
++        .map(reqwest::Response::from)
++        .map_err(|_| unavailable())
++}
+diff --git a/codex-rs/http-client/src/client.rs b/codex-rs/http-client/src/client.rs
+index c5c2e40bba02d337cbb7602909d9492054d55ed4..f13d8a30fec5332383f60afd88ac56d264d6cac0 100644
+--- a/codex-rs/http-client/src/client.rs
++++ b/codex-rs/http-client/src/client.rs
+@@ -166,6 +166,11 @@ impl TransportClient {
+     ) -> Result<reqwest::Response, reqwest::Error> {
+         apply_default_headers(request.headers_mut(), &self.default_headers);
+         request.headers_mut().extend(trace_headers());
++        // Android account builds use the platform trust/proxy stack for EVERY transport,
++        // including legacy direct clients and any upstream TLS retry. No socket fallback.
++        #[cfg(target_os = "android")]
++        return crate::android_platform::execute(request).await;
++        #[cfg(not(target_os = "android"))]
+         self.inner.execute(request).await
+     }
+ 
+diff --git a/codex-rs/http-client/src/lib.rs b/codex-rs/http-client/src/lib.rs
+index 5eb01f021b263fee0100435a2af5aec4a10c1d3b..d095d7840493019245ab96a5c933419d4c823ba5 100644
+--- a/codex-rs/http-client/src/lib.rs
++++ b/codex-rs/http-client/src/lib.rs
+@@ -17,6 +17,11 @@ mod route_aware_redirect;
+ mod tls_backend_fallback;
+ mod transport;
+ 
++#[cfg(target_os = "android")]
++mod android_platform;
++#[cfg(target_os = "android")]
++pub use android_platform::{AndroidHttpRequest, AndroidHttpResponse, install_android_http_transport};
++
+ pub use crate::chatgpt_cloudflare_cookies::with_chatgpt_cloudflare_cookie_store;
+ pub use crate::chatgpt_hosts::is_allowed_chatgpt_host;
+ pub use crate::client::HttpClient;
+diff --git a/codex-rs/http-client/src/route_aware_client_pool.rs b/codex-rs/http-client/src/route_aware_client_pool.rs
+index 905aaf8f0dd11598b9ff4e31e03bb3e42c8bec89..55ce9f2139cd839e30d70256abe4b5088979b6b7 100644
+--- a/codex-rs/http-client/src/route_aware_client_pool.rs
++++ b/codex-rs/http-client/src/route_aware_client_pool.rs
+@@ -547,7 +547,8 @@ impl RouteAwareClientPool {
+ 
+     fn follows_redirects_manually(&self) -> bool {
+         self.client_builder.follows_redirects()
+-            && (self.http_client_factory.outbound_proxy_policy()
++            && (cfg!(target_os = "android")
++                || self.http_client_factory.outbound_proxy_policy()
+                 == OutboundProxyPolicy::RespectSystemProxy
+                 || self.http_client_factory.network_policy().is_managed()
+                 || self.rustls_clients.is_some())

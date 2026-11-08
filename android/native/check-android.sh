@@ -4,7 +4,15 @@ set -euo pipefail
 # The caller supplies toolchain locations; no credentials or account state are read.
 : "${ANDROID_NDK_HOME:?Set ANDROID_NDK_HOME to Android NDK 28.2.13676358}"
 probe_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-bash "$probe_root/prepare-upstream.sh"
+feature_args=()
+case "${PROBE_VARIANT:-laboratory}" in
+    laboratory) bash "$probe_root/prepare-upstream.sh" ;;
+    account)
+        bash "$probe_root/prepare-upstream.sh" --account
+        feature_args=(--features account)
+        ;;
+    *) echo "Unsupported native variant: $PROBE_VARIANT" >&2; exit 2 ;;
+esac
 ndk_bin="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
 export CC_aarch64_linux_android="$ndk_bin/aarch64-linux-android26-clang"
 export CXX_aarch64_linux_android="$ndk_bin/aarch64-linux-android26-clang++"
@@ -33,4 +41,4 @@ case "$probe_action" in
     check|build) ;;
     *) echo "Unsupported probe action: $probe_action" >&2; exit 2 ;;
 esac
-cargo +1.95.0 "$probe_action" "${lock_args[@]}" --target "$probe_target" "$@"
+cargo +1.95.0 "$probe_action" "${lock_args[@]}" "${feature_args[@]}" --target "$probe_target" "$@"
