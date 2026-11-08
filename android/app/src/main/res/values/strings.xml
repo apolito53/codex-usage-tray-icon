@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Usage Meter Preview</string>
+    <string name="notification_channel_name">Usage meter preview</string>
+    <string name="notification_channel_description">Silent notification containing sample usage data for icon testing.</string>
+</resources>

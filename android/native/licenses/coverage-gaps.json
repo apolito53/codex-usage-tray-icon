@@ -1,0 +1,376 @@
+{
+  "status": "incomplete-for-external-native-apk-distribution",
+  "upstream_commit": "8f195c93d7e7acfef95acf273f0e49cce917e291",
+  "cargo_lock_sha256": "a19aa87ab0866a453766261940416a237b463d6de9862bbe883f2c5c88c86816",
+  "graph_package_count": 782,
+  "scope": "Reachable target-filtered Cargo dependency graph, including build dependencies; conservative superset of linked code.",
+  "coverage_gap_count": 61,
+  "coverage_gaps": [
+    {
+      "package": "Inflector 0.11.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "age 0.11.2",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "age-core 0.11.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "allocative 0.3.6",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "allocative_derive 0.3.6",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "asn1-rs-impl 0.2.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "base64-simd 0.8.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "bech32 0.9.1",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "cesu8 1.1.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "cookie-factory 0.3.3",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "crc-catalog 2.4.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "debugserver-types 0.5.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "display_container 0.9.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "eventsource-stream 0.2.3",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "fluent-langneg 0.13.1",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "fxhash 0.2.1",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "intl_pluralrules 7.0.2",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "io_tee 0.1.1",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "jni 0.22.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "jni-macros 0.22.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "jni-sys-macros 0.4.1",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "lock_free_hashtable 0.1.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "ndk-context 0.1.1",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "opentelemetry 0.31.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "opentelemetry-appender-tracing 0.31.1",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "opentelemetry-http 0.31.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "opentelemetry-otlp 0.31.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "opentelemetry-proto 0.31.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "opentelemetry-semantic-conventions 0.31.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "opentelemetry_sdk 0.31.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "pagable 0.4.1",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "pagable_derive 0.4.1",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "rama-core 0.3.0-alpha.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "rama-dns 0.3.0-alpha.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "rama-error 0.3.0-alpha.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "rama-http 0.3.0-alpha.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "rama-http-backend 0.3.0-alpha.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "rama-http-core 0.3.0-alpha.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "rama-http-headers 0.3.0-alpha.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "rama-http-types 0.3.0-alpha.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "rama-macros 0.3.0-alpha.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "rama-net 0.3.0-alpha.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "rama-socks5 0.3.0-alpha.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "rama-tcp 0.3.0-alpha.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "rama-tls-rustls 0.3.0-alpha.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "rama-udp 0.3.0-alpha.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "rama-unix 0.3.0-alpha.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "rama-utils 0.3.0-alpha.4",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "schemafy_core 0.5.2",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "schemafy_lib 0.5.2",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "sorted_vector_map 0.2.1",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "starlark 0.14.2",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "starlark_derive 0.14.2",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "starlark_map 0.14.2",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "static_interner 0.1.2",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "strong_hash 0.1.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "strong_hash_derive 0.1.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "tonic-prost 0.14.3",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "ts-rs 11.1.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "ts-rs-macros 11.1.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    },
+    {
+      "package": "vsimd 0.8.0",
+      "gaps": [
+        "No source-provided license text found; SPDX declaration alone is not a substitute"
+      ]
+    }
+  ]
+}

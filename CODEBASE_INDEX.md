@@ -1,5 +1,12 @@
 # Codebase Index
 
+## Android preview
+
+- `android/` - fixture-only status-bar readability preview; no live usage source.
+- `docs/android-phase-0.md` - data-access findings and the next integration gate.
+
+The preview does not decide the architecture of future Android capabilities.
+
 ## Entry points
 
 - `src/Program.cs` - single-instance WinForms startup.
