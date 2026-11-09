@@ -2,7 +2,7 @@
 
 Actionable work for this project. Keep tasks concrete and current; record durable facts and decisions in CRYSTALIZED_MEMORY.md.
 
-- [ ] Confirm live ChatGPT approval and the weekly percentage on the owner's ARM64 phone. Compare with the same account's usage dashboard and check the next scheduled refresh.
+- [ ] Confirm that the standalone 0.2.1 APK installs on the owner's phone, then verify ChatGPT approval and the weekly reading against the same account's dashboard.
 - [ ] Before a general public native binary release, review the remaining source-text gaps listed in the [Android notice inventory](android/native/licenses/README.md). The APK includes the collected notices and coverage report.
 
 - [ ] Verify prepaid credit menu rendering on native Ubuntu and run the full Python suite there (no Ubuntu/WSL available on the development machine).

@@ -4,7 +4,7 @@ The meter shows the weekly Codex allowance remaining as a number in the status b
 
 ## Connect a ChatGPT account
 
-1. Install the APK and open **Codex Usage Meter**. Version 0.2.0 updates the 0.1.1 preview when both are signed with the same Android key.
+1. Install the 0.2.1 APK and open **Codex Usage Meter**. It installs alongside **Usage Meter Preview** and has its own account storage and notification settings.
 2. Tap **Sign in with ChatGPT**, copy the one-time code and tap **Open ChatGPT sign-in**. Sign in on OpenAI’s website and enter the code. If your account disables this flow, enable device code login in ChatGPT’s security settings. A workspace administrator controls this setting for managed accounts. [OpenAI device-code instructions](https://learn.chatgpt.com/docs/auth#login-on-headless-devices)
 3. Return to the meter. After approval, it reads the allowance and reset time automatically. Tap **Show meter** to put the number in the status bar and grant notification permission if Android asks.
 
@@ -38,13 +38,15 @@ bash android/build-native.sh x86_64-linux-android "$PWD/android/native/out"
 
 Build the app from `android/` with JDK 17, Android SDK 36 and the checked-in Gradle wrapper. Set `-PaccountNativeDir=/absolute/path` if the libraries and notices are elsewhere.
 
+The standard APK uses the permanent application ID `com.apolito.codexusage.meter`. Keep that ID and signing key for updates. To update a working 0.2.0 install in place and retain its session, pass `-PupdatePreviewPackage=true` and sign with that install's key. This selects its original ID, `com.apolito.codexusage.preview`.
+
 ```sh
 ./gradlew :app:testDebugUnitTest :app:lintDebug
 ./gradlew :app:assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-On Windows use `gradlew.bat`. For a non-debuggable sideload build, run `:app:assembleRelease`, sign the unsigned APK locally with the same key as the prior install, and verify it with `apksigner verify --verbose`. The maintainers’ signing key is kept on the signing machine.
+On Windows use `gradlew.bat`. For a non-debuggable sideload build, run `:app:assembleRelease`, sign the unsigned APK locally, and verify it with `apksigner verify --verbose`. Run `python verify-native-pages.py path/to/signed.apk` to check the packaged ELF load segments for 16 KB page compatibility. The maintainers’ signing key is kept on the signing machine.
 
 ## Device checks and diagnostics
 
@@ -60,9 +62,9 @@ second requires the matching fixture and a new process, then clears it.
 
 ```sh
 test_class=com.apolito.codexusage.preview.NativeAccountProcessRestartTest
-runner=com.apolito.codexusage.preview.test/androidx.test.runner.AndroidJUnitRunner
+runner=com.apolito.codexusage.meter.test/androidx.test.runner.AndroidJUnitRunner
 adb shell am instrument -w -e class "$test_class" -e accountProcessPhase prepare "$runner"
-adb shell am force-stop com.apolito.codexusage.preview
+adb shell am force-stop com.apolito.codexusage.meter
 adb shell am instrument -w -e class "$test_class" -e accountProcessPhase restore "$runner"
 ```
 

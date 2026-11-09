@@ -7,17 +7,21 @@ val nativeAccountDirectory = providers.gradleProperty("accountNativeDir")
     .map { rootProject.file(it) }
     .orElse(rootProject.file("native/out"))
 
+// A signed-in 0.2.0 installation can still receive an update under its original ID.
+val updatePreviewPackage = providers.gradleProperty("updatePreviewPackage")
+    .map { it.toBooleanStrict() }.orElse(false)
+
 android {
     namespace = "com.apolito.codexusage.preview"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.apolito.codexusage.preview"
+        applicationId = if (updatePreviewPackage.get()) "com.apolito.codexusage.preview" else "com.apolito.codexusage.meter"
         minSdk = 26
         targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        versionCode = 3
-        versionName = "0.2.0"
+        versionCode = 4
+        versionName = "0.2.1"
     }
 
     compileOptions {

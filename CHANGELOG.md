@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Android 0.2.1 installs alongside older previews, including previews signed
+  on another machine. Both native libraries now use 16 KB ELF alignment.
+
 - Android 0.2.0 adds phone-owned ChatGPT sign-in and a status-bar reading of
   the remaining weekly Codex allowance, with automatic refresh and sign-out.
 
