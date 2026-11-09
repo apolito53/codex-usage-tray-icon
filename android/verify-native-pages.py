@@ -1,4 +1,4 @@
-"""Verify 16 KB load segment alignment in the meter's ELF64 libraries or APK."""
+"""Verify 16 KB load segment alignment in an ELF64 library, APK, or Play bundle."""
 
 import struct
 import sys
@@ -29,9 +29,10 @@ def verify(name, stream):
 
 
 def check(path):
-    if path.suffix == ".apk":
+    if path.suffix in (".apk", ".aab"):
         with zipfile.ZipFile(path) as apk:
-            libraries = [name for name in apk.namelist() if name.startswith("lib/") and name.endswith(".so")]
+            prefix = "base/lib/" if path.suffix == ".aab" else "lib/"
+            libraries = [name for name in apk.namelist() if name.startswith(prefix) and name.endswith(".so")]
             if not libraries:
                 raise ValueError(f"{path}: no packaged native libraries")
             for name in libraries:
@@ -44,7 +45,7 @@ def check(path):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        sys.exit("Usage: verify-native-pages.py <library.so or app.apk>")
+        sys.exit("Usage: verify-native-pages.py <library.so, app.apk, or app.aab>")
     try:
         check(Path(sys.argv[1]))
     except (OSError, ValueError, struct.error, zipfile.BadZipFile) as error:

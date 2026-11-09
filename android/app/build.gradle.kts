@@ -10,18 +10,25 @@ val nativeAccountDirectory = providers.gradleProperty("accountNativeDir")
 // A signed-in 0.2.0 installation can still receive an update under its original ID.
 val updatePreviewPackage = providers.gradleProperty("updatePreviewPackage")
     .map { it.toBooleanStrict() }.orElse(false)
+val playDistribution = providers.gradleProperty("playDistribution")
+    .map { it.toBooleanStrict() }.orElse(false)
+require(!playDistribution.get() || !updatePreviewPackage.get()) { "Choose either the Play edition or the preview update." }
 
 android {
     namespace = "com.apolito.codexusage.preview"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = if (updatePreviewPackage.get()) "com.apolito.codexusage.preview" else "com.apolito.codexusage.meter"
+        applicationId = when {
+            playDistribution.get() -> "com.apolito.allowancemeter"
+            updatePreviewPackage.get() -> "com.apolito.codexusage.preview"
+            else -> "com.apolito.codexusage.meter"
+        }
         minSdk = 26
         targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        versionCode = 4
-        versionName = "0.2.1"
+        versionCode = 5
+        versionName = "0.3.0"
     }
 
     compileOptions {
@@ -36,8 +43,9 @@ android {
     sourceSets["main"].jniLibs.srcDir(nativeAccountDirectory)
     sourceSets["main"].assets.srcDir(rootProject.file("native/notices"))
     sourceSets["main"].assets.srcDir(nativeAccountDirectory.map { it.resolve("notices") })
-    // This is a universal sideload APK. Android extracts only the device's ABI.
-    packaging.jniLibs.useLegacyPackaging = true
+    // Play delivers aligned, uncompressed libraries in device-specific ABI splits.
+    // Keep existing sideload APKs compressed, as in 0.2.1.
+    packaging.jniLibs.useLegacyPackaging = !playDistribution.get()
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
@@ -69,10 +77,12 @@ val verifyAccountLibraries by tasks.registering {
 tasks.matching { it.name == "mergeDebugNativeLibs" || it.name == "mergeReleaseNativeLibs" }.configureEach {
     dependsOn(verifyAccountLibraries)
 }
-tasks.matching { it.name == "packageRelease" }.configureEach {
+tasks.matching { it.name == "mergeReleaseAssets" }.configureEach {
     doFirst {
-        check(nativeAccountDirectory.get().resolve("notices/native-notices.zip").isFile) {
-            "The release requires the matching account-notices artifact. See android/README.md."
+        check(listOf("native-notices.zip", "notice-report.json").all {
+            nativeAccountDirectory.get().resolve("notices/$it").isFile
+        }) {
+            "Release APKs and bundles require the matching account-notices archive and report. See android/README.md."
         }
     }
 }

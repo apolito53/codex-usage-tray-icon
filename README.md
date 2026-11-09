@@ -3,10 +3,12 @@
 Codex Usage Tray shows your remaining weekly Codex allowance beside the clock
 on Windows and Ubuntu. The Android version puts the number in your status bar.
 
-On Android, open **Codex Usage Meter**, tap **Sign in with ChatGPT**, then
-approve the phone's one-time code in your browser. Tap **Show meter** to enable
-the notification. The phone checks its own account session directly.
-[Android installation and builds](android/README.md)
+The Android app is **Allowance Meter** (called **Codex Usage Meter** in the
+0.2.1 sideload). Tap **Sign in with ChatGPT**, approve the code in your browser,
+then tap **Show meter**. **Try demo** lets you see the notification without an
+account. The phone checks its own account session directly.
+[Android installation and builds](android/README.md) ·
+[Privacy policy](https://apolito53.github.io/codex-usage-tray-icon/privacy/)
 
 The tray icon shows the percentage of the weekly Codex allowance remaining.
 Its color shifts from green to amber to red as the allowance gets low. On

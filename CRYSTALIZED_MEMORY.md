@@ -1,6 +1,10 @@
 # Durable project notes
 
-- The standalone Android app uses `com.apolito.codexusage.meter`. An existing
+- The Play edition uses `com.apolito.allowancemeter` and an independent upload
+  key. It installs beside the private sideload and requires its own sign-in.
+  The [store handoff](android/play/README.md) and [signing instructions](android/README.md#google-play-build)
+  are canonical; keep signing material and submission contact details out of Git.
+- The standalone sideload uses `com.apolito.codexusage.meter`. An existing
   0.2.0 session can be updated under `com.apolito.codexusage.preview` using
   `-PupdatePreviewPackage=true` and its original signing key. Keep the
   signing key local. Its native account library uses Codex’s managed device authorization

@@ -1,0 +1,7 @@
+Initial Play release of Allowance Meter.
+
+• See weekly Codex allowance remaining in a silent status-bar meter.
+• Check the last update and local reset time in the notification drawer.
+• Connect through OpenAI's device-code sign-in on your phone.
+• Try a clearly labeled demo without an account.
+• Show, hide, refresh, or sign out from the app.

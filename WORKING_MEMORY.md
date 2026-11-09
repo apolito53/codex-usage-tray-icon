@@ -1,27 +1,29 @@
 # Current handoff
 
-Android 0.2.1 is the standalone phone meter. Install the APK, open **Codex
-Usage Meter**, and approve its ChatGPT device code. The current package
-`com.apolito.codexusage.meter` can coexist with the September preview. A
-working 0.2.0 install can retain its original package and session through the
+**Allowance Meter 0.3.0** (version code 5, `com.apolito.allowancemeter`)
+is prepared for Google Play. It has not been uploaded or submitted.
+The [store listing, screenshots and app-access instructions](android/play/README.md)
+and [public privacy policy](https://apolito53.github.io/codex-usage-tray-icon/privacy/)
+are ready. Developer enrollment and closed testing are next; see [TODO](TODO.md).
+
+The signed upload bundle is 18,932,840 bytes, SHA-256
+`1b54d6b3282c5e8bee7c1d0f0c6bd44fed45697ab7fea4dafbd92d2b5135f6a0`.
+Use the [Play build instructions](android/README.md#google-play-build) to
+make subsequent releases. The notice archive came from [the passing license workflow](https://github.com/apolito53/codex-usage-tray-icon/actions/runs/42544187369).
+The [notice inventory](android/native/licenses/README.md) distinguishes
+five missing original license files from zero unresolved distribution reviews.
+
+All 28 Android JVM tests and nine notice-provenance tests passed. Release
+lint found no errors. The Play package's real native auth, refresh, logout
+and process restart passed on Android 11 with synthetic credentials. APK
+splits generated from the signed bundle installed on Android 15 with 16 KB
+pages. The demo is labeled in both the app and notification and the privacy
+policy is readable offline.
+
+The 0.2.1 sideload showed a live percentage on a physical phone. Its
+package `com.apolito.codexusage.meter` and session remain independent of the
+Play installation. The older preview can also be kept; see the
 [legacy update build option](android/README.md#build).
-
-The phone installer showed a generic rejection for 0.2.0. On Android 11 we
-reproduced an update-signature conflict with a differently signed 0.1.1,
-then installed the signed 0.2.1 APK beside it and cold-launched both. The
-0.2.0 native binaries also had 4 KB ELF alignment. The new build verifies
-16 KB load segments in both ABIs. The signed APK installed and reached the
-sign-in screen on an Android 15 x86_64 emulator reporting 16,384-byte pages.
-
-Android lint and 22 unit tests passed. The actual native device grant, usage
-read, token rotation and sign-out passed with synthetic credentials under
-the standalone package on Android 11. The 0.2.0 account implementation had
-also been checked through process death and a real, unapproved OpenAI
-device code. The owner’s physical-phone install and live percentage still
-need confirmation. [Open checks](TODO.md)
-
-The 0.2.1 private sideload APK is 18,823,045 bytes. Its SHA-256 is
-`f8eb11b218ac62b12f5accc7bb2edcf2854203482829ae3a5571859b4197e0e0`.
 
 The Windows and Ubuntu trays read the desktop CLI’s selected Codex quota
 bucket. Native Ubuntu menu rendering and purchase-to-billing reconciliation

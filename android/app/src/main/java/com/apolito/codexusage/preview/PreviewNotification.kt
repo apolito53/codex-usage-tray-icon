@@ -11,6 +11,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Icon
 import android.os.Build
+import android.os.Bundle
 import java.text.DateFormat
 import java.util.Date
 
@@ -20,6 +21,7 @@ object PreviewNotification {
     // and replace a previous notification rather than creating a second one.
     const val CHANNEL_ID = "usage_preview_v1"
     private const val NOTIFICATION_ID = 117
+    private const val DEMO_EXTRA = "com.apolito.codexusage.DEMO"
 
     private fun manager(context: Context) = context.getSystemService(NotificationManager::class.java)
 
@@ -46,25 +48,46 @@ object PreviewNotification {
     fun isVisible(context: Context): Boolean =
         manager(context).activeNotifications.any { it.id == NOTIFICATION_ID }
 
+    fun isDemoVisible(context: Context): Boolean =
+        manager(context).activeNotifications.any {
+            it.id == NOTIFICATION_ID && it.notification.extras.getBoolean(DEMO_EXTRA, false)
+        }
+
     /** Called only in response to the user's explicit Show action. */
     @Synchronized
     fun show(context: Context, state: MeterState): Boolean {
         if (!state.connected) return false
         createChannel(context)
-        return canPost(context) && post(context, state)
+        return canPost(context) && post(context, state, demo = false)
+    }
+
+    /** A demo notification is always explicitly labeled and never requires a session. */
+    @Synchronized
+    fun showDemo(context: Context, reading: UsageReading): Boolean {
+        createChannel(context)
+        return canPost(context) && post(context, MeterState(connected = true, reading = reading), demo = true)
+    }
+
+    @Synchronized
+    fun updateDemoIfVisible(context: Context, reading: UsageReading) {
+        if (isDemoVisible(context) && canPost(context)) {
+            post(context, MeterState(connected = true, reading = reading), demo = true)
+        }
     }
 
     /** Safe for the controller's background refresh; never resurrect a dismissal. */
     @Synchronized
     fun updateIfVisible(context: Context, state: MeterState) {
+        // The account controller must not replace or dismiss an independent demo.
+        if (isDemoVisible(context)) return
         if (!state.connected) {
             hide(context)
         } else if (isVisible(context) && canPost(context)) {
-            post(context, state)
+            post(context, state, demo = false)
         }
     }
 
-    private fun post(context: Context, state: MeterState): Boolean {
+    private fun post(context: Context, state: MeterState, demo: Boolean): Boolean {
         val reading = state.reading
         val remaining = reading?.remaining?.takeIf { it in 0..100 }
         val readingError = reading == null && !state.busy && (state.stale || state.message != null)
@@ -80,16 +103,22 @@ object PreviewNotification {
             Intent(context, HideNotificationReceiver::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val title = if (remaining != null) {
-            "Codex · $remaining% weekly remaining"
+        val title = if (demo && remaining != null) {
+            "Demo · $remaining% weekly remaining"
+        } else if (demo) {
+            "Demo · weekly allowance unavailable"
+        } else if (remaining != null) {
+            "Allowance Meter · $remaining% weekly remaining"
         } else {
-            "Codex · weekly allowance unavailable"
+            "Allowance Meter · weekly allowance unavailable"
         }
         val status = buildString {
+            if (demo) append("EXAMPLE DATA · ")
             if (state.stale) append("STALE / OFFLINE · ")
             append(UsageDisplay.observed(reading?.observedAtMillis))
         }
         val detail = buildString {
+            if (demo) append("DEMO · EXAMPLE DATA — not your account\n")
             if (state.stale) {
                 append(if (reading == null) "OFFLINE — no weekly reading yet\n" else "STALE / OFFLINE — last known reading\n")
             }
@@ -98,7 +127,8 @@ object PreviewNotification {
             } else {
                 append("Weekly allowance unavailable\n")
             }
-            append(UsageDisplay.reset(reading?.resetsAtSeconds))
+            if (demo) append("Example ")
+            append(UsageDisplay.reset(reading?.resetsAtSeconds).replaceFirstChar { if (demo) it.lowercase() else it.toString() })
             append("\n")
             append(UsageDisplay.observed(reading?.observedAtMillis))
             append("\nTap to open your meter.")
@@ -108,6 +138,7 @@ object PreviewNotification {
             .setContentTitle(title)
             .setContentText(status)
             .setStyle(Notification.BigTextStyle().bigText(detail))
+            .addExtras(Bundle().apply { putBoolean(DEMO_EXTRA, demo) })
             .setContentIntent(openMeter)
             // Android 14+ can dismiss ongoing notifications. Reuse the existing
             // receiver to also cancel an update racing the dismissal broadcast.

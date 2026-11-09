@@ -1,14 +1,14 @@
-# Codex Usage Meter for Android
+# Allowance Meter for Android
 
 The meter shows the weekly Codex allowance remaining as a number in the status bar. Open the notification drawer for the last observation and local reset time. It runs on the phone and supports Android 8 or later on ARM64 and x86_64.
 
 ## Connect a ChatGPT account
 
-1. Install the 0.2.1 APK and open **Codex Usage Meter**. It installs alongside **Usage Meter Preview** and has its own account storage and notification settings.
+1. Open **Allowance Meter** (**Codex Usage Meter** on the 0.2.1 sideload). The 0.3.0 Play edition uses its own package and can sit beside the sideload. Sign in separately on the Play edition; choose **Hide** in the old app when you're ready to switch.
 2. Tap **Sign in with ChatGPT**, copy the one-time code and tap **Open ChatGPT sign-in**. Sign in on OpenAI’s website and enter the code. If your account disables this flow, enable device code login in ChatGPT’s security settings. A workspace administrator controls this setting for managed accounts. [OpenAI device-code instructions](https://learn.chatgpt.com/docs/auth#login-on-headless-devices)
 3. Return to the meter. After approval, it reads the allowance and reset time automatically. Tap **Show meter** to put the number in the status bar and grant notification permission if Android asks.
 
-**Refresh** requests a reading immediately. Android also schedules a network-connected refresh roughly every 15 minutes, subject to power and network conditions. A failed refresh preserves the previous reading and marks it stale. A successful response with no weekly window shows an unknown value. **Hide** dismisses the indicator. **Sign out** clears the phone’s session and cached reading and stops its periodic job.
+**Try demo** shows clearly labeled example readings without an account. **Refresh** changes the sample and **Exit demo** removes it. With a real account, **Refresh** reads your allowance immediately. Android also schedules refreshes roughly every 15 minutes, subject to power and network conditions. A failed refresh preserves the last reading and marks it stale. **Hide** dismisses the indicator. **Sign out** clears the reading, stops refreshes and attempts to remove the saved session. See the [privacy policy](https://apolito53.github.io/codex-usage-tray-icon/privacy/) for details.
 
 ## How it works
 
@@ -47,6 +47,25 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 On Windows use `gradlew.bat`. For a non-debuggable sideload build, run `:app:assembleRelease`, sign the unsigned APK locally, and verify it with `apksigner verify --verbose`. Run `python verify-native-pages.py path/to/signed.apk` to check the packaged ELF load segments for 16 KB page compatibility. The maintainers’ signing key is kept on the signing machine.
+
+## Google Play build
+
+The Play App Bundle uses its own package, `com.apolito.allowancemeter` (`-PplayDistribution=true`). The pre-Play sideload uses a debug certificate; do not import it as a Play signing key. The private sideload and Play installations have independent settings, sessions, and notifications. Play users can update normally after the initial install.
+
+On the Windows signing machine, set `JAVA_HOME` and `ANDROID_HOME` as above. Download the [official Google bundletool JAR](https://github.com/google/bundletool/releases/tag/1.18.3). The tested JAR's SHA-256 is `a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29`. Fetch the current native binaries and **reviewed** notice bundle as described above.
+
+```powershell
+# First-ever setup only, if there is no existing upload key:
+.\initialize-play-upload-key.ps1
+# Every release (from android/):
+.\build-play.ps1 -Bundletool C:\tools\bundletool-all-1.18.3.jar
+```
+
+The script signs with the owner’s dedicated upload key and verifies both native ABIs, the packaged attribution review, 16 KB configuration, and the JAR signature. By default the AAB is in `app/build/outputs/play`. Use `-OutputDirectory` for a new destination; an existing release file is never overwritten. Google Play App Signing should generate and hold the **app signing key** for the first store release. The local **upload key** only authenticates future uploads.
+
+The upload key, public certificate, and Windows DPAPI-protected password live outside the repository under `%LOCALAPPDATA%\AllowanceMeter\PlaySigning`. Only the PEM certificate is public. Keep the keystore and its password in an owner-managed secure backup; the DPAPI file alone is not a portable backup. If this machine is lost, Play also supports an [upload-key reset](https://developer.android.com/studio/publish/app-signing#reset_upload_key).
+
+See the [Play listing, artwork, screenshots and app-access worksheet](play/README.md). A local build does not create a listing or start a Play test.
 
 ## Device checks and diagnostics
 

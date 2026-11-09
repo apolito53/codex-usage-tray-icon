@@ -1,0 +1,19 @@
+Allowance Meter is an independent app and is not affiliated with OpenAI.
+
+Demo
+Try demo uses example values generated on this device. It does not require an account or make usage requests.
+
+ChatGPT sign-in and usage
+If you choose to connect, sign-in opens an OpenAI page in your browser; the app does not ask you to enter your password. The app sends device authorization, session and usage requests directly to OpenAI. OpenAI handles those requests under its own policies.
+
+On your device
+The app stores your renewable session encrypted with an Android Keystore key in app-private storage excluded from backup. It also stores the latest weekly allowance, reset and observation times, and an account-matching digest locally. Android may show your reading in the notification drawer when you enable the meter.
+
+The phone schedules usage refreshes while signed in. When you sign out, the app clears the cached reading, stops scheduled refreshes, and attempts to remove the saved session. After successful local removal, it attempts to revoke the session with OpenAI. It reports if local removal fails or revocation cannot be confirmed. Sign-out does not delete your OpenAI account. Uninstalling also removes the app’s local data.
+
+Diagnostics and support
+The app writes limited operation outcomes to Android’s local system log. It does not include tokens or account identifiers in those app log messages. The app has no analytics, advertising or developer-operated account server. If you contact us, information you choose to submit is handled by GitHub. Please never post sign-in codes or tokens.
+
+Public policy: https://apolito53.github.io/codex-usage-tray-icon/privacy/
+Support: https://github.com/apolito53/codex-usage-tray-icon/issues
+Open-source code and notices: https://github.com/apolito53/codex-usage-tray-icon/tree/main/android/native/licenses

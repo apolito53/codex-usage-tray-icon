@@ -1,0 +1,25 @@
+Keep your weekly Codex allowance within sight.
+
+Allowance Meter is an independent Android utility for Codex users. It puts the percentage of your weekly allowance remaining in a silent status-bar notification. Open the notification drawer to see the last update and the reset time in your local time zone.
+
+A small, focused meter
+• Show or hide the indicator when you want it.
+• Refresh your reading from the app.
+• See when a reading is stale or unavailable.
+• Use light or dark mode with your phone's theme.
+• Try clearly labeled example data before connecting an account.
+
+Runs on your phone
+Sign in through OpenAI's website using a one-time device code. Your computer does not need to be on. Live readings require an eligible ChatGPT account with Codex access and device-code login enabled. Managed workspaces may restrict this sign-in method. An API key is not used.
+
+The app asks Android to refresh about every 15 minutes while connected to a network. Android may delay background work because of battery, network, or system settings. A failed refresh keeps the last reading and marks it stale. Readings reflect the time of the last successful update; missing data is shown as unavailable.
+
+You control the notification
+Tap Show meter and allow notifications when Android asks. The notification is silent. Your phone's notification settings determine whether silent icons appear in the status bar. If you dismiss or hide the meter, open the app and tap Show meter to restore it.
+
+Account data stays between your phone and OpenAI
+The app sends sign-in, session-renewal, allowance, and sign-out requests directly to OpenAI over HTTPS. Session credentials are encrypted in app-private storage using Android Keystore. The developer does not operate an account relay or receive automatic analytics or crash reports. Use Sign out to remove the phone's saved session and cached reading; the app reports removal problems. See the privacy policy for details.
+
+Allowance Meter displays the weekly allowance reported by OpenAI. It does not increase your limits or purchase credits. Service availability and account limits are controlled by OpenAI and can change.
+
+Allowance Meter is not affiliated with, endorsed by, or sponsored by OpenAI. OpenAI, ChatGPT, and Codex are trademarks of OpenAI.

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Codex Usage Meter</string>
+    <string name="app_name">Allowance Meter</string>
     <string name="notification_channel_name">Weekly Codex allowance</string>
     <string name="notification_channel_description">A silent status-bar meter for your weekly Codex allowance.</string>
 </resources>

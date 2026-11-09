@@ -2,6 +2,7 @@ package com.apolito.codexusage.preview
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.app.NotificationManager
 import android.content.ActivityNotFoundException
 import android.content.ClipData
@@ -17,6 +18,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.text.method.LinkMovementMethod
+import android.text.util.Linkify
 import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
@@ -38,6 +41,7 @@ class MainActivity : Activity() {
     private lateinit var accountStatus: TextView
     private lateinit var accountMessage: TextView
     private lateinit var accountAction: Button
+    private lateinit var demoAction: Button
     private lateinit var challengeActions: LinearLayout
     private lateinit var loginActions: LinearLayout
     private lateinit var challengeCode: TextView
@@ -52,6 +56,7 @@ class MainActivity : Activity() {
     private var pendingShow = false
     private var notificationMessage: String? = null
     private var browserMessage: String? = null
+    private val demoActive get() = DemoMeter.isActive(this)
 
     private val dark get() = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
     private val bgColor get() = Color.parseColor(if (dark) "#15121C" else "#F8F5FC")
@@ -66,6 +71,7 @@ class MainActivity : Activity() {
         pendingShow = savedInstanceState?.getBoolean("pendingShow") ?: false
         account = MeterAccount.state(this)
         PreviewNotification.createChannel(this)
+        reconcileDemoWithAccount()
         buildScreen()
         updateScreen()
         if (account.challenge != null) revealSignIn()
@@ -76,6 +82,7 @@ class MainActivity : Activity() {
         stopObserving = MeterAccount.observe(this) { state ->
             val newCode = state.challenge != null && account.challenge != state.challenge
             account = state
+            reconcileDemoWithAccount()
             if (state.challenge == null) browserMessage = null
             updateScreen()
             if (newCode) revealSignIn()
@@ -95,8 +102,9 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        MeterAccount.resumeLogin(this)
+        if (!demoActive) MeterAccount.resumeLogin(this)
         account = MeterAccount.state(this)
+        reconcileDemoWithAccount()
         if (::notificationStatus.isInitialized) updateScreen()
     }
 
@@ -143,7 +151,7 @@ class MainActivity : Activity() {
             setPadding(dp(24), dp(24), dp(24), dp(28))
         }
         scroll.addView(column, FrameLayout.LayoutParams(-1, -2))
-        column.addView(text("CODEX USAGE · ANDROID", 12f, accentColor, true))
+        column.addView(text("ALLOWANCE METER · ANDROID", 12f, accentColor, true))
         column.addView(text("A little number.\nA useful place.", 30f, textColor, true), rowParams(top = 12))
         column.addView(text("Your weekly Codex allowance, right in your phone’s status bar.", 16f, mutedColor), rowParams(top = 12))
 
@@ -202,6 +210,19 @@ class MainActivity : Activity() {
             }
         }
         column.addView(accountAction, rowParams(top = 12))
+        demoAction = button("Try demo").apply {
+            setOnClickListener {
+                // Enter only after the real account has finished loading. Demo
+                // preferences and sample values never touch the account cache.
+                account = MeterAccount.state(this@MainActivity)
+                if (!account.connected && !account.busy && account.challenge == null) {
+                    DemoMeter.start(this@MainActivity)
+                    notificationMessage = null
+                    updateScreen()
+                }
+            }
+        }
+        column.addView(demoAction, rowParams(top = 8))
         loginActions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         column.addView(loginActions, rowParams(top = 8))
         checkLogin = button("Check sign-in").apply {
@@ -221,15 +242,30 @@ class MainActivity : Activity() {
         val accountActions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         column.addView(accountActions, rowParams(top = 12))
         refresh = button("Refresh").apply {
-            setOnClickListener { MeterAccount.refresh(this@MainActivity) }
+            setOnClickListener {
+                if (demoActive) {
+                    DemoMeter.refresh(this@MainActivity)
+                    DemoMeter.reading(this@MainActivity)?.let {
+                        PreviewNotification.updateDemoIfVisible(this@MainActivity, it)
+                    }
+                    updateScreen()
+                } else {
+                    MeterAccount.refresh(this@MainActivity)
+                }
+            }
         }
         accountActions.addView(refresh, LinearLayout.LayoutParams(0, -2, 1f))
         signOut = button("Sign out").apply {
             setOnClickListener {
                 pendingShow = false
                 notificationMessage = null
-                PreviewNotification.hide(this@MainActivity)
-                MeterAccount.signOut(this@MainActivity)
+                if (demoActive) {
+                    exitDemo()
+                    updateScreen()
+                } else {
+                    PreviewNotification.hide(this@MainActivity)
+                    MeterAccount.signOut(this@MainActivity)
+                }
             }
         }
         accountActions.addView(signOut, LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = dp(8) })
@@ -255,6 +291,8 @@ class MainActivity : Activity() {
         column.addView(button("Notification settings").apply { setOnClickListener { openNotificationSettings() } }, rowParams(top = 8))
         column.addView(text("The meter updates silently. If you hide or dismiss it, tap Show meter to restore it. Your phone may also hide silent status-bar icons in system settings.", 13f, mutedColor), rowParams(top = 12))
         column.addView(text("Sign-in and usage refresh run on this phone. Your computer does not need to be on.", 13f, mutedColor), rowParams(top = 18))
+        column.addView(text("An independent app, not affiliated with OpenAI.", 13f, mutedColor), rowParams(top = 12))
+        column.addView(button("Privacy policy").apply { setOnClickListener { showPrivacyPolicy() } }, rowParams(top = 8))
         setContentView(scroll)
         // PhoneWindow.getInsetsController() dereferences its decor view on
         // API 30+. Install the content/decor before asking for the controller.
@@ -291,7 +329,8 @@ class MainActivity : Activity() {
     private fun requestShow() {
         notificationMessage = null
         account = MeterAccount.state(this)
-        if (!account.connected) {
+        reconcileDemoWithAccount()
+        if (!account.connected && !demoActive) {
             notificationMessage = "Sign in with ChatGPT before showing your meter."
             updateScreen()
             return
@@ -320,7 +359,9 @@ class MainActivity : Activity() {
 
     private fun postMeter() {
         account = MeterAccount.state(this)
-        if (!account.connected) {
+        reconcileDemoWithAccount()
+        val demoReading = DemoMeter.reading(this)
+        if (!account.connected && demoReading == null) {
             notificationMessage = "Sign in with ChatGPT before showing your meter."
             return
         }
@@ -328,7 +369,9 @@ class MainActivity : Activity() {
             notificationMessage = "Notifications or the meter channel are blocked. Open Notification settings, then tap Show meter."
             return
         }
-        if (!PreviewNotification.show(this, account)) {
+        val posted = if (demoReading != null) PreviewNotification.showDemo(this, demoReading)
+            else PreviewNotification.show(this, account)
+        if (!posted) {
             notificationMessage = "Notification access changed. Check Notification settings, then tap Show meter."
             return
         }
@@ -341,18 +384,22 @@ class MainActivity : Activity() {
     }
 
     private fun updateScreen() {
-        val reading = account.reading.takeIf { account.connected }
+        val demo = demoActive
+        val reading = if (demo) DemoMeter.reading(this) else account.reading.takeIf { account.connected }
         val remaining = reading?.remaining?.takeIf { it in 0..100 }
-        val readingError = account.connected && reading == null && !account.busy &&
+        val readingError = !demo && account.connected && reading == null && !account.busy &&
             (account.stale || account.message != null)
-        icon.setImageBitmap(StatusIconRenderer.render(remaining, account.connected && account.stale, readingError))
+        icon.setImageBitmap(StatusIconRenderer.render(remaining, !demo && account.connected && account.stale, readingError))
         readingDescription.text = when {
+            demo && remaining != null -> "$remaining% remaining · demo"
             !account.connected -> "Your weekly allowance"
             remaining != null -> "$remaining% remaining"
             reading == null && account.busy -> "Checking weekly allowance…"
             else -> "Weekly allowance unavailable"
         }
-        readingDetails.text = if (!account.connected) {
+        readingDetails.text = if (demo) {
+            "EXAMPLE DATA · not your account\nExample ${UsageDisplay.reset(reading?.resetsAtSeconds).replaceFirstChar { it.lowercase() }}\n${UsageDisplay.observed(reading?.observedAtMillis)}"
+        } else if (!account.connected) {
             "Connect with ChatGPT to see your real usage."
         } else {
             buildString {
@@ -365,12 +412,15 @@ class MainActivity : Activity() {
             }
         }
         accountStatus.text = when {
+            demo -> "Demo · example data"
             account.connected -> "ChatGPT connected"
             account.challenge != null -> "Finish connecting in your browser"
             account.busy -> "Preparing sign-in…"
             else -> "Connect your ChatGPT account"
         }
-        accountMessage.text = browserMessage ?: account.message ?: when {
+        accountMessage.text = if (demo) {
+            "This sample is generated on your phone. Refresh changes the example; no account or network is needed."
+        } else browserMessage ?: account.message ?: when {
             account.connected && account.busy -> "Refreshing your weekly allowance…"
             account.connected && account.stale && reading != null -> "Couldn’t refresh. The last reading stays visible until this phone can connect again."
             account.connected && account.stale -> "Couldn’t fetch your weekly allowance. Refresh when this phone can connect again."
@@ -382,24 +432,54 @@ class MainActivity : Activity() {
         challengeActions.visibility = if (account.challenge != null) View.VISIBLE else View.GONE
         loginActions.visibility = if (account.challenge != null) View.VISIBLE else View.GONE
         challengeCode.text = account.challenge?.userCode ?: ""
-        accountAction.visibility = if (account.connected) View.GONE else View.VISIBLE
+        accountAction.visibility = if (account.connected || demo) View.GONE else View.VISIBLE
         accountAction.text = if (account.challenge != null) "Open ChatGPT sign-in" else "Sign in with ChatGPT"
         accountAction.isEnabled = account.challenge != null || !account.busy
+        demoAction.visibility = if (account.connected || account.challenge != null || demo) View.GONE else View.VISIBLE
+        demoAction.isEnabled = !account.busy
         // A challenge remains usable during device-code polling.
         checkLogin.isEnabled = account.challenge != null
-        refresh.visibility = if (account.connected) View.VISIBLE else View.GONE
-        refresh.isEnabled = account.connected && !account.busy
-        refresh.text = if (account.busy) "Refreshing…" else "Refresh"
-        signOut.visibility = if (account.connected || account.canForget) View.VISIBLE else View.GONE
-        signOut.text = if (account.canForget) "Forget saved sign-in" else "Sign out"
-        showNotification.isEnabled = account.connected
+        refresh.visibility = if (account.connected || demo) View.VISIBLE else View.GONE
+        refresh.isEnabled = demo || (account.connected && !account.busy)
+        refresh.text = if (!demo && account.busy) "Refreshing…" else "Refresh"
+        signOut.visibility = if (account.connected || account.canForget || demo) View.VISIBLE else View.GONE
+        signOut.text = if (demo) "Exit demo" else if (account.canForget) "Forget saved sign-in" else "Sign out"
+        showNotification.isEnabled = account.connected || demo
         hideNotification.isEnabled = PreviewNotification.isVisible(this)
         notificationStatus.text = notificationMessage ?: when {
-            !account.connected -> "Sign in, then tap Show meter. Nothing is posted automatically."
+            !account.connected && !demo -> "Sign in or try the demo, then tap Show meter. Nothing is posted automatically."
             !PreviewNotification.canPost(this) -> "Notifications are off. Show meter requests access, or use Notification settings."
             PreviewNotification.isVisible(this) -> "Meter is showing. Pull down to see the weekly reset time and reading status."
             else -> "Meter is hidden. Tap Show meter when you’re ready."
         }
+    }
+
+    private fun exitDemo() {
+        if (PreviewNotification.isDemoVisible(this)) PreviewNotification.hide(this)
+        DemoMeter.exit(this)
+    }
+
+    private fun reconcileDemoWithAccount() {
+        // A restored real session always wins; never turn it into sample state.
+        if (demoActive && account.connected) {
+            exitDemo()
+            notificationMessage = null
+        }
+    }
+
+    private fun showPrivacyPolicy() {
+        val policyText = resources.openRawResource(R.raw.privacy_policy).bufferedReader().use { it.readText() }
+        val policy = text(policyText, 15f, textColor).apply {
+            setPadding(dp(24), dp(8), dp(24), dp(8))
+            setLinkTextColor(accentColor)
+            Linkify.addLinks(this, Linkify.WEB_URLS)
+            movementMethod = LinkMovementMethod.getInstance()
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Privacy policy")
+            .setView(ScrollView(this).apply { addView(policy) })
+            .setPositiveButton("Close", null)
+            .show()
     }
 
     private fun openNotificationSettings() {
