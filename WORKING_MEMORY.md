@@ -10,6 +10,11 @@ The signed upload bundle is 18,932,840 bytes, SHA-256
 `1b54d6b3282c5e8bee7c1d0f0c6bd44fed45697ab7fea4dafbd92d2b5135f6a0`.
 Use the [Play build instructions](android/README.md#google-play-build) to
 make subsequent releases. The notice archive came from [the passing license workflow](https://github.com/apolito53/codex-usage-tray-icon/actions/runs/42544187369).
+The AAB deliberately retains the phone-tested ARM64 and x86_64 binaries
+from [native build 42538905597](https://github.com/apolito53/codex-usage-tray-icon/actions/runs/42538905597);
+both packaged libraries match that artifact byte for byte. The native source
+and build inputs were unchanged. [Release-commit native CI](https://github.com/apolito53/codex-usage-tray-icon/actions/runs/42544897081)
+also passed both ABIs. Independent Rust/OpenSSL builds are not byte-identical.
 The [notice inventory](android/native/licenses/README.md) distinguishes
 five missing original license files from zero unresolved distribution reviews.
 
