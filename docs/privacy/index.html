@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="How Allowance Meter handles account sign-in, local storage, OpenAI requests, and privacy choices.">
+  <title>Privacy policy · Allowance Meter</title>
+  <link rel="canonical" href="https://apolito53.github.io/codex-usage-tray-icon/privacy/">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --background: #f8f5fc;
+      --surface: #eee7f6;
+      --text: #251b34;
+      --muted: #62556f;
+      --accent: #6940aa;
+      --border: #d8cce6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--background);
+      color: var(--text);
+      font: 1rem/1.7 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-text-size-adjust: 100%;
+    }
+    main { width: min(100% - 3rem, 47rem); margin: 0 auto; padding: 3.5rem 0 2.5rem; }
+    header { padding-bottom: 1.75rem; border-bottom: 1px solid var(--border); }
+    .brand { margin: 0 0 .75rem; color: var(--accent); font-weight: 700; letter-spacing: .03em; }
+    h1 { margin: 0; font-size: clamp(2rem, 7vw, 3rem); line-height: 1.15; letter-spacing: -.035em; }
+    .date, footer { color: var(--muted); font-size: .9rem; }
+    .date { margin-bottom: 0; }
+    h2 { margin: 2.15rem 0 .6rem; font-size: 1.3rem; line-height: 1.3; letter-spacing: -.015em; }
+    p { margin: .7rem 0; }
+    a { color: var(--accent); text-underline-offset: .16em; overflow-wrap: anywhere; }
+    a:hover { text-decoration-thickness: .13em; }
+    a:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; border-radius: 2px; }
+    ul, ol { margin: .7rem 0; padding-left: 1.45rem; }
+    li { margin: .45rem 0; }
+    .overview { background: var(--surface); border-radius: 1rem; padding: 1rem 1.25rem; margin: 1.6rem 0; }
+    .overview p { margin: .3rem 0; }
+    strong { font-weight: 650; }
+    footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #15121c;
+        --surface: #26202f;
+        --text: #f4effb;
+        --muted: #c8bfd3;
+        --accent: #c6aaff;
+        --border: #493a58;
+      }
+    }
+    @media (max-width: 420px) {
+      main { width: calc(100% - 2.25rem); padding-top: 2.25rem; }
+      .overview { padding: .9rem 1rem; }
+    }
+    @media print {
+      :root { --background: white; --surface: #f3f0f7; --text: black; --muted: #333; --accent: #39205a; --border: #bbb; }
+      main { width: 100%; padding: 0; }
+      a { color: inherit; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="brand">Allowance Meter</p>
+      <h1>Privacy policy</h1>
+      <p class="date">Last updated <time datetime="2026-11-08">8 November 2026</time></p>
+    </header>
+
+    <p>Allowance Meter is an independent Android utility that displays the weekly Codex allowance reported by OpenAI. It is maintained through the <a href="https://github.com/apolito53/codex-usage-tray-icon">apolito53/codex-usage-tray-icon project</a>. This policy explains the Android app and this privacy page.</p>
+
+    <div class="overview">
+      <p><strong>Your phone connects directly to OpenAI.</strong> The developer does not operate an account relay or receive automatic analytics, advertising data, or crash reports from the app.</p>
+      <p>Connecting an account still sends account requests to OpenAI. The app stores a session on your phone so it can read your allowance later.</p>
+    </div>
+
+    <h2>When you use the demo</h2>
+    <p>The clearly labeled demo uses example percentages and timestamps. The demo itself does not need a ChatGPT account or make account requests. Its values are not readings from your account, and demo controls do not change a real account or its cached reading.</p>
+
+    <h2>When you connect an account</h2>
+    <p>Sign in with ChatGPT starts a device-code sign-in flow. The app opens OpenAI’s sign-in page in your external browser, where you enter the one-time code shown by the app. You enter your OpenAI password on OpenAI’s website, not in Allowance Meter.</p>
+    <p>After authorization, the app receives session tokens and the account information contained in them. This can include account and user identifiers and other account claims. It uses this information to maintain the phone’s session, request your allowance, and attempt to revoke the session when you sign out. An OpenAI API key is not requested.</p>
+    <p>The app reads allowance and reset information. It does not request your Codex prompts, conversations, repository contents, contacts, photos, or other personal files.</p>
+
+    <h2>Requests sent to OpenAI</h2>
+    <p>The app sends device authorization, token exchange and renewal, allowance, and sign-out requests directly to <strong>auth.openai.com</strong> and <strong>chatgpt.com</strong> over HTTPS. These requests include the credentials and account identifiers needed for the operation. OpenAI also receives ordinary connection information such as your IP address and request headers.</p>
+    <p>While you remain connected, Android schedules periodic allowance refreshes when network access is available, including when the app is not on screen. Android controls the timing. Opening an external sign-in page also involves your browser and OpenAI’s website.</p>
+    <p>OpenAI controls its service and the data it receives. See <a href="https://openai.com/policies/privacy-policy/">OpenAI’s privacy policy</a> for its handling, retention, and available privacy controls. The developer cannot change OpenAI’s retention or delete data held by OpenAI.</p>
+
+    <h2>What stays on your phone</h2>
+    <ul>
+      <li><strong>Saved session:</strong> session credentials are encrypted using an Android Keystore key and kept in app-private storage. The app does not write a plaintext credential file.</li>
+      <li><strong>Latest reading:</strong> a separate app-private cache stores the latest weekly percentage, reset time, observation time, and a digest used to match that reading to the signed-in account. This cache is separate from the encrypted credential record.</li>
+      <li><strong>Notification:</strong> if you choose Show meter, Android displays the allowance and timing information in a silent notification. Android’s notification and lock-screen settings control where it is visible.</li>
+      <li><strong>Local diagnostics:</strong> the app writes fixed operation outcomes, such as a refresh succeeding or being unavailable, to Android’s rolling local diagnostic log. These messages do not contain session tokens or allowance-response bodies, and the app does not automatically upload the log.</li>
+    </ul>
+    <p>The app excludes its account storage and reading cache from Android cloud backup and device transfer. The current session remains saved until you sign out, clear the app’s storage, or uninstall it. Later successful readings replace the cached reading. A failed refresh can retain the last reading and mark it stale.</p>
+
+    <h2>Removing your data</h2>
+    <p>Use <strong>Sign out</strong> to clear the cached reading, stop the periodic refresh job, hide the meter, and attempt to remove the phone’s saved credentials. The app reports a local removal failure. After successful local removal, it also asks OpenAI to revoke that session; if OpenAI cannot confirm revocation, the app says so. If Android reports a storage problem, use <strong>Forget saved sign-in</strong> or clear Allowance Meter’s storage in Android settings.</p>
+    <p>You can also remove the app’s local data through Android’s Clear storage control or by uninstalling the app. Android controls the separate rolling system diagnostic log.</p>
+    <p>Allowance Meter does not create a separate developer account for you. Signing out or removing the app does not delete your ChatGPT/OpenAI account, conversations, or other data held by OpenAI. Use the account and privacy controls described in <a href="https://openai.com/policies/privacy-policy/">OpenAI’s privacy policy</a> for those requests.</p>
+
+    <h2>Ads, analytics, and support</h2>
+    <p>The app contains no advertising or analytics integration and no automatic developer crash-report upload. It does not sell user data.</p>
+    <p>For a privacy question or technical issue, contact the maintainer through <a href="https://github.com/apolito53/codex-usage-tray-icon/issues">the project’s GitHub issues</a>. Issues are public. Do not post passwords, tokens, one-time codes, authentication files, personal account details, or screenshots that expose them. A general description, app version, and Android version are enough to begin a technical inquiry.</p>
+    <p>If you choose to post an issue, GitHub receives what you submit under its own policies. GitHub Pages also hosts this page and handles ordinary web connection data. This page includes no analytics, tracking pixels, forms, external fonts, or third-party scripts.</p>
+
+    <h2>Changes and independence</h2>
+    <p>This policy may be updated when the app’s data handling changes. The date at the top identifies the current text.</p>
+    <p>Allowance Meter is not affiliated with, endorsed by, or sponsored by OpenAI. OpenAI, ChatGPT, and Codex are trademarks of OpenAI.</p>
+
+    <footer>
+      <p><a href="https://github.com/apolito53/codex-usage-tray-icon">Project source</a> · <a href="https://github.com/apolito53/codex-usage-tray-icon/issues">Contact the maintainer</a></p>
+    </footer>
+  </main>
+</body>
+</html>
