@@ -13,6 +13,7 @@ export PROBE_TARGET=$target PROBE_ACTION=build PROBE_VARIANT=account
 bash "$android/native/check-android.sh" --release
 mkdir -p "$output/$abi"
 lib="$android/native/target/$target/release/libcodex_android_native_probe.so"
+python3 "$android/verify-native-pages.py" "$lib"
 symbols="$("$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm" -D --defined-only "$lib")"
 for method in initialize startLogin finishLogin cancelLogin readUsage signOut; do
   grep -q " Java_com_apolito_codexusage_preview_NativeAccount_${method}$" <<<"$symbols"

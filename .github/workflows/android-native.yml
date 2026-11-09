@@ -3,11 +3,13 @@ on:
   push:
     paths:
       - 'android/native/Cargo.*'
+      - 'android/native/build.rs'
       - 'android/native/src/**'
       - 'android/native/patches/*.patch'
       - 'android/native/*.sh'
       - 'android/native/upstream-revision.txt'
       - 'android/build-native.sh'
+      - 'android/verify-native-pages.py'
       - '.github/workflows/android-native.yml'
   workflow_dispatch:
 
