@@ -38,6 +38,11 @@ def sha256(data: bytes) -> str:
 
 def has_license_text(record: dict) -> bool:
     for item in record["files"]:
+        # An official license supplied for an explicitly reviewed election is
+        # useful distribution material, but does not restore a missing upstream
+        # file. Keep that raw source-coverage metric honest.
+        if item.get("counts_as_source_provided_license_text") is False:
+            continue
         path = PurePosixPath(item["path"])
         if LICENSE_NAME.search(path.name) or item.get("content_kind") == "full-license-text":
             return True
@@ -53,6 +58,155 @@ def reviewed_source_specs() -> dict:
     source = Path(__file__).with_name("reviewed-source-notices.json")
     data = json.loads(source.read_text(encoding="utf-8"))
     return {(item["name"], item["version"]): item for item in data["packages"]}
+
+
+@lru_cache(maxsize=1)
+def reviewed_upstream_specs() -> dict:
+    source = Path(__file__).with_name("reviewed-upstream-notices.json")
+    data = json.loads(source.read_text(encoding="utf-8"))
+    return {(item["name"], item["version"]): item for item in data["packages"]}
+
+
+def add_reviewed_upstream_notices(output: Path, record: dict, read_source) -> int:
+    """Apply only individually reviewed dispositions to exact published bytes.
+
+    Repository recoveries and official terms for a declared alternative are
+    deliberately separate. No current branch or generic SPDX fallback is used.
+    """
+    spec = reviewed_upstream_specs().get((record["name"], record["version"]))
+    if spec is None or not (record.get("source") or "").startswith("registry+"):
+        return 0
+    sources = {}
+    for source in spec["source_matches"]:
+        data = read_source(source["source_path"])
+        if sha256(data) != source["sha256"]:
+            raise ValueError(f"Reviewed upstream source hash mismatch: {record['name']} {record['version']} {source['source_path']}")
+        reference = source.get("required_reference")
+        if reference and reference.encode("utf-8") not in data:
+            raise ValueError(f"Reviewed license reference missing: {record['name']} {source['source_path']}")
+        sources[source["source_path"]] = data
+
+    # Verify all local originals before adding or accepting a previous supplement.
+    texts = []
+    for item in spec["notice_files"]:
+        relative = PurePosixPath(item["local_path"])
+        if relative.is_absolute() or ".." in relative.parts or "\\" in item["local_path"]:
+            raise ValueError(f"Unsafe reviewed notice path: {relative}")
+        data = Path(__file__).parent.joinpath(*relative.parts).read_bytes()
+        if sha256(data) != item["sha256"]:
+            raise ValueError(f"Reviewed notice hash mismatch: {record['name']} {relative}")
+        texts.append((item, data))
+    recovered = spec["basis"] == "byte-identical-published-source"
+    review = {
+        "status": "reviewed",
+        "basis": spec["basis"],
+        "finding": spec["finding"],
+        "source_archive_sha256": spec["source_archive_sha256"],
+        "source_matches": spec["source_matches"],
+        "source_provided_text_recovered": recovered,
+    }
+    for key in ("repository", "revision", "package_path", "selected_license", "schema_provenance"):
+        if key in spec:
+            review[key] = spec[key]
+    record["distribution_review"] = review
+    added = 0
+
+    def preserve(relative, data, provenance):
+        nonlocal added
+        previous = next((item for item in record["files"] if item["path"] == relative), None)
+        if previous is not None:
+            if previous["sha256"] != sha256(data):
+                raise ValueError(f"Conflicting reviewed notice: {record['name']} {relative}")
+            if sha256((output / record["directory"] / relative).read_bytes()) != previous["sha256"]:
+                raise ValueError(f"Existing reviewed notice hash mismatch: {record['name']} {relative}")
+            return
+        add_file(output, record, None, relative, provenance, data)
+        added += 1
+
+    for item, data in texts:
+        preserve(f"reviewed-upstream/{item['upstream_path']}", data, {
+            "origin": "reviewed-matching-repository" if recovered else "reviewed-distribution-license-material",
+            "content_kind": item["content_kind"],
+            "counts_as_source_provided_license_text": recovered,
+            "url": item["url"],
+            "source_archive_sha256": spec["source_archive_sha256"],
+            **({"linked_from": item["linked_from"]} if "linked_from" in item else {}),
+            **({"repository_revision": spec["revision"]} if "revision" in spec else {}),
+        })
+    # Preserve package-authored evidence separately from external license terms.
+    for path in spec.get("preserve_sources", ["Cargo.toml"] if not recovered else []):
+        preserve(f"reviewed-attribution/{path}", sources[path], {
+            "origin": "verbatim-reviewed-published-source",
+            "content_kind": "package-license-declaration-and-attribution",
+            "counts_as_source_provided_license_text": False,
+            "source_path": path,
+            "source_file_sha256": sha256(sources[path]),
+            "source_archive_sha256": spec["source_archive_sha256"],
+        })
+    return added
+
+
+def summarize_distribution_review(index: dict) -> None:
+    """Count unresolved raw gaps, allowing only exact-source reviewed dispositions."""
+    unresolved = []
+    for record in index["packages"]:
+        if record["coverage_gaps"] and record.get("distribution_review", {}).get("status") != "reviewed":
+            unresolved.append({"package": f"{record['name']} {record['version']}", "gaps": record["coverage_gaps"]})
+    index["distribution_review_scope"] = "Disposition of package-level source-text gaps only; not a graph-wide legal compatibility certification."
+    index["reviewed_distribution_count"] = sum(r.get("distribution_review", {}).get("status") == "reviewed" for r in index["packages"])
+    index["unresolved_distribution_count"] = len(unresolved)
+    index["unresolved_distribution"] = unresolved
+    manifest = Path(__file__).with_name("reviewed-upstream-notices.json")
+    index["distribution_review_manifest_sha256"] = sha256(manifest.read_bytes())
+
+
+def write_distribution_review(output: Path, index: dict) -> None:
+    lines = ["# Reviewed native distribution materials", "", index["distribution_review_scope"], "",
+             f"Source-provided full-text gaps: {index['coverage_gap_count']}. Unresolved distribution dispositions: {index['unresolved_distribution_count']}.", "",
+             "Missing upstream files remain counted even when authentic official terms and an explicit license election supply reviewed distribution materials.", ""]
+    for record in index["packages"]:
+        review = record.get("distribution_review")
+        if not review:
+            continue
+        lines.extend([f"## {record['name']} {record['version']}", "", review["finding"], ""])
+        if review.get("selected_license"):
+            lines.extend([f"Distribution license election: **{review['selected_license']}**.", ""])
+        lines.extend([f"Published source archive SHA-256: `{review['source_archive_sha256']}`.", ""])
+        if review.get("revision"):
+            lines.extend([f"Matching repository: {review['repository']}/tree/{review['revision']}/{review['package_path']}", ""])
+        schema = review.get("schema_provenance")
+        if schema:
+            lines.extend(["Debug Adapter Protocol schema: Copyright (c) Microsoft Corporation.", "",
+                          f"Original source: {schema['repository']}/blob/{schema['revision']}/{schema['repository_path']}", "",
+                          "The schema is used to generate Rust bindings through schemafy. The published copy differs only in carriage-return bytes; no substantive JSON changes were found. Microsoft's original terms provide MIT for code and CC-BY-3.0-US for documentation. Both sets of terms and attribution are retained conservatively. The package author's own MIT declaration is preserved separately; no copyright year is added.", "",
+                          "CC-BY-3.0-US: https://creativecommons.org/licenses/by/3.0/us/", ""])
+        for item in record["files"]:
+            if item["path"].startswith(("reviewed-upstream/", "reviewed-attribution/")):
+                path = f"{record['directory']}/{item['path']}"
+                lines.append(f"- [{item['path']}]({path})" + (f" - original: {item['url']}" if item.get("url") else ""))
+        lines.append("")
+    if index["unresolved_distribution"]:
+        lines.extend(["## Unresolved dispositions", ""])
+        lines.extend(f"- {item['package']}: {'; '.join(item['gaps'])}" for item in index["unresolved_distribution"])
+    (output / "DISTRIBUTION_REVIEW.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    source_lines = ["# Source code for native components", "",
+                    "The following components are available under the Mozilla Public License 2.0 (MPL-2.0). Their source code is available at the exact locked revisions below. The corresponding MPL license texts and copyright notices are retained in this notice bundle.", ""]
+    for record in index["packages"]:
+        if record.get("declared_license") != "MPL-2.0":
+            continue
+        source = record.get("source") or ""
+        if source.startswith("git+"):
+            repository = source[4:].split("?", 1)[0].removesuffix(".git")
+            revision = source.rsplit("#", 1)[-1]
+            source_url = f"{repository}/archive/{revision}.tar.gz"
+        else:
+            source_url = record.get("source_archive")
+        if not source_url:
+            raise ValueError(f"MPL source location missing: {record['name']} {record['version']}")
+        source_lines.append(f"- **{record['name']} {record['version']}** - source: {source_url}; MPL-2.0: `{record['directory']}/crate/`.")
+    source_lines.extend(["", "The source archives retain their original license and copyright notices. This native build applies no patches to these MPL packages; the project's source preparation changes are confined to the Codex checkout. Any distributor changes to the MPL-covered files must also be made available under MPL-2.0.", "",
+                         "The MPL license permits inclusion in a larger work under other terms. Those terms do not restrict recipients' rights to the MPL-covered source. See the bundled MPL-2.0 text, especially sections 3.1-3.3, and https://www.mozilla.org/en-US/MPL/2.0/FAQ/ .", ""])
+    (output / "SOURCE_CODE.md").write_text("\n".join(source_lines), encoding="utf-8")
 
 
 def add_reviewed_source_notices(output: Path, record: dict, read_source) -> int:
@@ -230,9 +384,11 @@ def write_bundle(output: Path, index: dict) -> dict:
     archive = Path(str(output) + ".zip")
     if archive.exists():
         raise ValueError(f"Archive already exists: {archive}")
+    summarize_distribution_review(index)
+    write_distribution_review(output, index)
     gaps = index["coverage_gaps"]
     (output / "index.json").write_text(json.dumps(index, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    lines = ["# Native dependency notices", "", index["scope"], "", "This bundle preserves source-provided license and notice texts, with hashes and provenance in `index.json`. It does not certify legal completeness. No license alternatives are automatically selected.", "", "Reviewed source excerpts distinguish complete license text from copyright or license references. Reference-only excerpts do not clear a missing-text gap.", "", "## Missing source-provided license texts", ""]
+    lines = ["# Native dependency notices", "", index["scope"], "", "This bundle preserves source-provided license and notice texts, with hashes and provenance in `index.json`. It does not certify legal completeness. License elections are limited to the exact-source dispositions recorded in `DISTRIBUTION_REVIEW.md`.", "", "Reviewed source excerpts distinguish complete license text from copyright or license references. Reference-only excerpts and separately supplied official terms do not clear a missing-source-text gap.", "", f"Unresolved distribution dispositions: {index['unresolved_distribution_count']}. See `DISTRIBUTION_REVIEW.md` for the reviewed materials and `SOURCE_CODE.md` for MPL source availability.", "", "## Missing source-provided license texts", ""]
     lines.extend(f"- {g['package']}: {'; '.join(g['gaps'])}" for g in gaps)
     if not gaps:
         lines.append("No package-level license-text gaps detected by the collector. Embedded notices still require human review.")
@@ -244,7 +400,7 @@ def write_bundle(output: Path, index: dict) -> dict:
                 info.compress_type = zipfile.ZIP_DEFLATED
                 info.external_attr = 0o100644 << 16
                 bundle.writestr(info, path.read_bytes())
-    return {"output": str(output), "archive": str(archive), "archive_sha256": sha256(archive.read_bytes()), "packages": len(index["packages"]), "coverage_gap_count": len(gaps), "coverage_gaps": gaps}
+    return {"output": str(output), "archive": str(archive), "archive_sha256": sha256(archive.read_bytes()), "packages": len(index["packages"]), "coverage_gap_count": len(gaps), "coverage_gaps": gaps, "reviewed_distribution_count": index["reviewed_distribution_count"], "unresolved_distribution_count": index["unresolved_distribution_count"], "unresolved_distribution": index["unresolved_distribution"], "distribution_review_manifest_sha256": index["distribution_review_manifest_sha256"]}
 
 
 def main():
@@ -325,6 +481,7 @@ def main():
                 data = b"".join(sqlite.read_bytes().splitlines(keepends=True)[:45])
                 add_file(output, record, None, "source-notices/sqlite3-first-45-lines.txt", {"origin": "verbatim-source-header", "source_path": "sqlite3/sqlite3.c", "source_lines": [1, 45]}, data)
         add_reviewed_source_notices(output, record, lambda relative: (root / relative).read_bytes())
+        add_reviewed_upstream_notices(output, record, lambda relative: (root / relative).read_bytes())
         has_license = has_license_text(record)
         if not has_license and not record["is_probe_root"]:
             missing.append((record, vcs))

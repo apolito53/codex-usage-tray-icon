@@ -21,6 +21,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Test notice provenance and distribution review
+        working-directory: android/native
+        run: python3 -m unittest discover -s licenses -p 'test_*.py'
       - name: Collect notices from pinned sources
         working-directory: android/native
         run: |
@@ -41,6 +44,9 @@ jobs:
           set -e
           # Exit 2 carries a completed archive with a coverage report for maintainer review.
           if [[ "$result" != 0 && "$result" != 2 ]]; then exit "$result"; fi
+          # Source archives can omit a text for which we have a reviewed, pinned disposition.
+          # Fail on any new gap that has no such review.
+          jq -e '.unresolved_distribution_count == 0 and .unresolved_distribution == []' "$RUNNER_TEMP/notice-report.json" >/dev/null
           mkdir -p "$RUNNER_TEMP/pack/notices"
           cp "$RUNNER_TEMP/native-notices.zip" "$RUNNER_TEMP/notice-report.json" "$RUNNER_TEMP/pack/notices/"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

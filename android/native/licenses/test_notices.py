@@ -21,6 +21,7 @@ class CoverageTests(unittest.TestCase):
             {"path": "crate/LICENSES/README.md"},
             {"path": "reviewed-source/lib.rs.lines-1-9.txt", "content_kind": "copyright-and-license-reference"},
             {"path": "reviewed-source/README.md.lines-22-22.txt", "content_kind": "license-reference"},
+            {"path": "reviewed-upstream/Apache-2.0.txt", "counts_as_source_provided_license_text": False},
         ):
             self.assertFalse(collector.has_license_text({"files": [item]}))
         self.assertTrue(collector.has_license_text({"files": [{"path": "reviewed-source/lib.rs.lines-1-19.txt", "content_kind": "full-license-text"}]}))
@@ -52,6 +53,46 @@ class CoverageTests(unittest.TestCase):
             spec["source_notices"][0]["notice_sha256"] = "b" * 64
             with self.assertRaisesRegex(ValueError, "span mismatch"):
                 collector.add_reviewed_source_notices(Path(temporary), record, lambda _: source)
+
+    def test_reviewed_official_terms_require_exact_evidence_without_hiding_raw_gap(self):
+        # Fixture terms are deliberately not third-party license texts.
+        source = b"Fixture explicitly offers Apache-2.0\n"
+        notice = b"Fixture official terms\n"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "terms.txt").write_bytes(notice)
+            spec = {
+                "basis": "explicit-published-apache-alternative", "finding": "Fixture only",
+                "source_archive_sha256": "a" * 64, "selected_license": "Apache-2.0",
+                "source_matches": [{"source_path": "Cargo.toml", "sha256": collector.sha256(source), "required_reference": "Apache-2.0"}],
+                "notice_files": [{"local_path": "terms.txt", "upstream_path": "LICENSE-APACHE", "url": "https://example.invalid/fixture", "sha256": collector.sha256(notice), "content_kind": "official-license-text"}],
+            }
+            record = {"name": "review-fixture", "version": "1.0", "source": "registry+fixture", "directory": "packages/fixture", "files": [], "coverage_gaps": [collector.MISSING_LICENSE_TEXT]}
+            with patch.object(collector, "reviewed_upstream_specs", return_value={(record["name"], record["version"]): spec}), patch.object(collector, "__file__", str(root / "collect_notices.py")):
+                with self.assertRaisesRegex(ValueError, "source hash mismatch"):
+                    collector.add_reviewed_upstream_notices(root, record, lambda _: source + b"changed")
+                self.assertEqual(2, collector.add_reviewed_upstream_notices(root, record, lambda _: source))
+                self.assertEqual(0, collector.add_reviewed_upstream_notices(root, record, lambda _: source))
+                self.assertFalse(collector.has_license_text(record))
+                self.assertEqual([collector.MISSING_LICENSE_TEXT], record["coverage_gaps"])
+                self.assertEqual("Apache-2.0", record["distribution_review"]["selected_license"])
+                (root / "terms.txt").write_bytes(notice + b"changed")
+                with self.assertRaisesRegex(ValueError, "notice hash mismatch"):
+                    collector.add_reviewed_upstream_notices(root, record, lambda _: source)
+
+    def test_unreviewed_new_version_remains_a_distribution_gap(self):
+        index = {"packages": [{"name": "unknown-version-fixture", "version": "2.0", "coverage_gaps": [collector.MISSING_LICENSE_TEXT]}]}
+        collector.summarize_distribution_review(index)
+        self.assertEqual(1, index["unresolved_distribution_count"])
+        self.assertEqual(0, index["reviewed_distribution_count"])
+        self.assertEqual("unknown-version-fixture 2.0", index["unresolved_distribution"][0]["package"])
+
+    def test_vendored_reviewed_notices_retain_their_original_bytes(self):
+        root = Path(collector.__file__).parent
+        for spec in collector.reviewed_upstream_specs().values():
+            for item in spec["notice_files"]:
+                with self.subTest(package=spec["name"], path=item["local_path"]):
+                    self.assertEqual(item["sha256"], collector.sha256((root / item["local_path"]).read_bytes()))
 
 
 class BundleTests(unittest.TestCase):
@@ -99,6 +140,20 @@ class BundleTests(unittest.TestCase):
             original, _ = self.make_input(root, corrupt=True)
             with self.assertRaisesRegex(ValueError, "Original notice hash mismatch"):
                 supplement.supplement(original, root, root / "output")
+
+    def test_inherited_review_status_cannot_clear_an_unreviewed_gap(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            original, index = self.make_input(root)
+            record = index["packages"][0]
+            record["files"] = []
+            record["coverage_gaps"] = [collector.MISSING_LICENSE_TEXT]
+            record["distribution_review"] = {"status": "reviewed", "finding": "Untrusted inherited fixture claim"}
+            with zipfile.ZipFile(original, "w") as bundle:
+                bundle.writestr("index.json", json.dumps(index))
+            report = supplement.supplement(original, root, root / "output")
+            self.assertEqual(1, report["unresolved_distribution_count"])
+            self.assertEqual(0, report["reviewed_distribution_count"])
 
     def test_unsafe_bundle_paths_are_rejected(self):
         for name in ("../escape", "/absolute", "C:/escape", "folder\\escape"):

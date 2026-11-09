@@ -19,8 +19,10 @@ from collect_notices import (
     MAX_NOTICE_BYTES,
     MISSING_LICENSE_TEXT,
     add_reviewed_source_notices,
+    add_reviewed_upstream_notices,
     has_license_text,
     reviewed_source_specs,
+    reviewed_upstream_specs,
     sha256,
     write_bundle,
 )
@@ -58,12 +60,16 @@ def supplement(input_zip: Path, crate_archives: Path, output: Path) -> dict:
     added = 0
     for record in index["packages"]:
         safe_relative(record["directory"])
+        # A previously supplemented index is evidence, not authority to carry a
+        # review across versions or a changed review manifest. Re-establish it
+        # only after checking this run's exact archive, source and notice bytes.
+        record.pop("distribution_review", None)
         # Verify all retained originals against the downloaded bundle's index.
         for item in record["files"]:
             relative = safe_relative(item["path"])
             if sha256((output / record["directory"]).joinpath(*relative.parts).read_bytes()) != item["sha256"]:
                 raise ValueError(f"Original notice hash mismatch: {record['name']} {item['path']}")
-        spec = reviewed_source_specs().get((record["name"], record["version"]))
+        spec = reviewed_source_specs().get((record["name"], record["version"])) or reviewed_upstream_specs().get((record["name"], record["version"]))
         if spec is not None:
             prefix = f"{record['name']}-{record['version']}"
             archive_bytes = (crate_archives / f"{prefix}.crate").read_bytes()
@@ -78,6 +84,7 @@ def supplement(input_zip: Path, crate_archives: Path, output: Path) -> dict:
                     with archive.extractfile(member) as source:
                         return source.read()
                 added += add_reviewed_source_notices(output, record, read_source)
+                added += add_reviewed_upstream_notices(output, record, read_source)
         if has_license_text(record):
             record["coverage_gaps"] = [gap for gap in record["coverage_gaps"] if gap != MISSING_LICENSE_TEXT]
     gaps = [{"package": f"{record['name']} {record['version']}", "gaps": record["coverage_gaps"]} for record in index["packages"] if record["coverage_gaps"]]
@@ -92,6 +99,7 @@ def supplement(input_zip: Path, crate_archives: Path, output: Path) -> dict:
         "reviewed_source_excerpts_added": added,
         "coverage_gap_count": len(gaps),
         "limitation": "Source copyright and license references are preserved but do not substitute for missing complete license texts.",
+        "distribution_review_manifest_sha256": sha256(Path(__file__).with_name("reviewed-upstream-notices.json").read_bytes()),
     })
     return write_bundle(output, index)
 

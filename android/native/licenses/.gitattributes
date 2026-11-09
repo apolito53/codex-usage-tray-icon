@@ -1,0 +1,4 @@
+# These source-provided bytes are hashed in reviewed-upstream-notices.json.
+reviewed-texts/** -text whitespace=cr-at-eol
+# Release reports identify the exact bytes of both review manifests on Linux and Windows.
+reviewed-*-notices.json text eol=lf

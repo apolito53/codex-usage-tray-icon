@@ -1,0 +1,877 @@
+{
+  "schema_version": 1,
+  "review_scope": "2026-11-08 disposition review of the 13 full-text gaps in the locked Android graph. Eight exact-source repository recoveries, four explicit Apache-2.0 alternative elections with official terms, and one MIT binding/schema disposition preserve authentic provenance. Five missing crate-authored license files remain explicitly counted; none is fabricated. This does not certify legal compatibility of the entire graph.",
+  "packages": [
+    {
+      "name": "allocative",
+      "version": "0.3.6",
+      "source_archive_sha256": "d8cf9afc79c83d514444b55df3935d317da54b1ce3b17a133c646889cc260de8",
+      "basis": "byte-identical-published-source",
+      "repository": "https://github.com/facebook/starlark-rust",
+      "revision": "c778ec4fc7d250a8158f9a163ff450a112a59b3c",
+      "package_path": "allocative/allocative",
+      "finding": "Every published Rust source and .src fixture, plus Cargo.toml.orig, matches this immutable repository snapshot byte for byte. Cargo-generated Cargo.toml and Cargo.lock are excluded from the repository comparison. Repository root notice texts are copied verbatim.",
+      "source_matches": [
+        {
+          "source_path": "Cargo.toml.orig",
+          "repository_path": "allocative/allocative/Cargo.toml",
+          "sha256": "6649d016c5b1b3a286d6ae243e1dc6a3eb735147dee58c08f171d63edaf87da1"
+        },
+        {
+          "source_path": "build.rs",
+          "repository_path": "allocative/allocative/build.rs",
+          "sha256": "b6a152c562d31da11fe527ef7b74117f4172cbd2f865cdf5890645e6757e50d3"
+        },
+        {
+          "source_path": "src/allocative_trait.rs",
+          "repository_path": "allocative/allocative/src/allocative_trait.rs",
+          "sha256": "9b3b1d758d3fb00e083a8295f066388f4697dff81b91c82e41b872d606e290ba"
+        },
+        {
+          "source_path": "src/flamegraph.rs",
+          "repository_path": "allocative/allocative/src/flamegraph.rs",
+          "sha256": "d4edd4bbdddb481cb9e74c919e8a79f0d7f4061d791a8e7d1bbe81ff6820502d"
+        },
+        {
+          "source_path": "src/global_root.rs",
+          "repository_path": "allocative/allocative/src/global_root.rs",
+          "sha256": "74b30271d82ffdc17600e1087a26f819a81edfc46daad11613d3c130f4ed8c9d"
+        },
+        {
+          "source_path": "src/golden.rs",
+          "repository_path": "allocative/allocative/src/golden.rs",
+          "sha256": "f26bf91d2e3ebeb8aa50e7f4e08e3b5f74579db466142ae432798156dead9a44"
+        },
+        {
+          "source_path": "src/impls.rs",
+          "repository_path": "allocative/allocative/src/impls.rs",
+          "sha256": "e164bdfd9be9892b6431b57c482f87122cb31bb11b3ff921966dbc2009d6ac55"
+        },
+        {
+          "source_path": "src/impls/anyhow.rs",
+          "repository_path": "allocative/allocative/src/impls/anyhow.rs",
+          "sha256": "243aca6ca2b6186d504718706f386ca1304fcf7f4afefd04510a5584f4f5b8ad"
+        },
+        {
+          "source_path": "src/impls/bumpalo.rs",
+          "repository_path": "allocative/allocative/src/impls/bumpalo.rs",
+          "sha256": "fb6323d836a46865914b25cbca7685c3bb54b8ab1a02a7e709b864c61e3946de"
+        },
+        {
+          "source_path": "src/impls/common.rs",
+          "repository_path": "allocative/allocative/src/impls/common.rs",
+          "sha256": "3355a799a9cb972e36b1caafffa59a57f8a7bab42314c1a6d04b77a54e10d57c"
+        },
+        {
+          "source_path": "src/impls/compact_str.rs",
+          "repository_path": "allocative/allocative/src/impls/compact_str.rs",
+          "sha256": "9314c33a9819aac3162bc3455823f972c735703e3d79a6bc00ba8d97321a1df5"
+        },
+        {
+          "source_path": "src/impls/compact_str_test_heap.src",
+          "repository_path": "allocative/allocative/src/impls/compact_str_test_heap.src",
+          "sha256": "445f29e8a26380e254dfac0aa2764a9805a61b2e0ba7cb914a71312aa8a0870e"
+        },
+        {
+          "source_path": "src/impls/compact_str_test_inline.src",
+          "repository_path": "allocative/allocative/src/impls/compact_str_test_inline.src",
+          "sha256": "2351ea2fb0f3d79f22cc815618b5ef6a1520378ac6eec3bcc97b31f192314e2a"
+        },
+        {
+          "source_path": "src/impls/dashmap.rs",
+          "repository_path": "allocative/allocative/src/impls/dashmap.rs",
+          "sha256": "e94cf77c77977f8c06c4f4ba0b773f7f7876a7af82620a66ff3b19b375ab4043"
+        },
+        {
+          "source_path": "src/impls/either.rs",
+          "repository_path": "allocative/allocative/src/impls/either.rs",
+          "sha256": "56a1efdd443f618ccaace269c86b5614ab94bcaf1d3db77b0207ba65c8774be1"
+        },
+        {
+          "source_path": "src/impls/either_test_golden.src",
+          "repository_path": "allocative/allocative/src/impls/either_test_golden.src",
+          "sha256": "de0630cc51fb2b9c88213d3f7baa4751dfdfb72fe20bf8336b1feb37371fed08"
+        },
+        {
+          "source_path": "src/impls/futures.rs",
+          "repository_path": "allocative/allocative/src/impls/futures.rs",
+          "sha256": "6084871f1d62ebd74a3d6e3ef04bba147ea9f86081c8e1c038cc4a957b0ce8a4"
+        },
+        {
+          "source_path": "src/impls/hashbrown.rs",
+          "repository_path": "allocative/allocative/src/impls/hashbrown.rs",
+          "sha256": "9b14ae967b3e856e84e7dcea9a914daff2a784f4441607dc734d76e9e42ac87a"
+        },
+        {
+          "source_path": "src/impls/hashbrown_test_hash_table.src",
+          "repository_path": "allocative/allocative/src/impls/hashbrown_test_hash_table.src",
+          "sha256": "cd6256847acf3192974a6deb025f0c6f21b5e1353fa08365f035b09b90bc2f14"
+        },
+        {
+          "source_path": "src/impls/hashbrown_util.rs",
+          "repository_path": "allocative/allocative/src/impls/hashbrown_util.rs",
+          "sha256": "20ce7b83ea3b8e3e0d343c02b44b8e46e4a3333943dbf27f203725492184c7c0"
+        },
+        {
+          "source_path": "src/impls/indexmap.rs",
+          "repository_path": "allocative/allocative/src/impls/indexmap.rs",
+          "sha256": "7602038bd1f335d812b19383330bdfab4432091432bf78f8dc0ef34ba3f705ea"
+        },
+        {
+          "source_path": "src/impls/lock_api.rs",
+          "repository_path": "allocative/allocative/src/impls/lock_api.rs",
+          "sha256": "0357bbe82eca3fe1a23507e14cf26545b78f83e7f576408b043db32b549ed7bb"
+        },
+        {
+          "source_path": "src/impls/num_bigint.rs",
+          "repository_path": "allocative/allocative/src/impls/num_bigint.rs",
+          "sha256": "22ab273484815ebecc99ccf00dfadb32cd455d1994507cd066d2b19d3b8db3bf"
+        },
+        {
+          "source_path": "src/impls/once_cell.rs",
+          "repository_path": "allocative/allocative/src/impls/once_cell.rs",
+          "sha256": "4b9da0bb8dc09dc69ea1ad1d26504dda6cc22f988b982a9b78e3c2ee71fb1854"
+        },
+        {
+          "source_path": "src/impls/parking_lot.rs",
+          "repository_path": "allocative/allocative/src/impls/parking_lot.rs",
+          "sha256": "9690e4edf739df015987d17b9ca2ebd7d77cff611dbf14a36056a2b781635a27"
+        },
+        {
+          "source_path": "src/impls/prost_types.rs",
+          "repository_path": "allocative/allocative/src/impls/prost_types.rs",
+          "sha256": "822fd2a8f9df1523b37ab8f92929427281d4895976c9d5aa8be7d6f63e3d8faf"
+        },
+        {
+          "source_path": "src/impls/serde_json.rs",
+          "repository_path": "allocative/allocative/src/impls/serde_json.rs",
+          "sha256": "0bbdda78bdc36e8b488059f97dc4a05bb6605098738b4bc88cae4b23466b3298"
+        },
+        {
+          "source_path": "src/impls/slab.rs",
+          "repository_path": "allocative/allocative/src/impls/slab.rs",
+          "sha256": "b4ae03ba747c97ba422f53d9f3a1219456e87675d4d7cb2f83c045455fbaf163"
+        },
+        {
+          "source_path": "src/impls/smallvec.rs",
+          "repository_path": "allocative/allocative/src/impls/smallvec.rs",
+          "sha256": "c9ccf278c7192aa24d98d53f50413797aa880f40ffb31c5ddcd022236d09bf71"
+        },
+        {
+          "source_path": "src/impls/sorted_vector_map.rs",
+          "repository_path": "allocative/allocative/src/impls/sorted_vector_map.rs",
+          "sha256": "84468af0cb12fa631ec9cf2c560add36a979770e622baee7fd10f3c881a06a69"
+        },
+        {
+          "source_path": "src/impls/std.rs",
+          "repository_path": "allocative/allocative/src/impls/std.rs",
+          "sha256": "c9259fe0c6b66583eb7d8fda9c8e650f8263b06116052927b3aa014b27659d78"
+        },
+        {
+          "source_path": "src/impls/std/any.rs",
+          "repository_path": "allocative/allocative/src/impls/std/any.rs",
+          "sha256": "1bd48bd58e6686c6695db5d1980e8346f5e174bf1dd26734e7d0e136d0e8859c"
+        },
+        {
+          "source_path": "src/impls/std/cell.rs",
+          "repository_path": "allocative/allocative/src/impls/std/cell.rs",
+          "sha256": "f95c28b45decb0c87183a15882029d7d8d090d7d798cf7bb0ef5131a79d2e495"
+        },
+        {
+          "source_path": "src/impls/std/cell_test_borrowed.src",
+          "repository_path": "allocative/allocative/src/impls/std/cell_test_borrowed.src",
+          "sha256": "c2ecbff100b85f2b0947911c6ad4591a6fc2bd418a8e4b0a77af5ee39e296563"
+        },
+        {
+          "source_path": "src/impls/std/cell_test_default.src",
+          "repository_path": "allocative/allocative/src/impls/std/cell_test_default.src",
+          "sha256": "a12937498915728c5f35d91ec74b07335fc0fffbef18e2eb88ab30c8caab4a81"
+        },
+        {
+          "source_path": "src/impls/std/cell_test_once_cell.src",
+          "repository_path": "allocative/allocative/src/impls/std/cell_test_once_cell.src",
+          "sha256": "41075c2bf4369a4700163713bc090b1bec6e61ecd5ca55f4ec0bd991687f6c27"
+        },
+        {
+          "source_path": "src/impls/std/collections.rs",
+          "repository_path": "allocative/allocative/src/impls/std/collections.rs",
+          "sha256": "d2dc469cd775f368540e85fe2613aa941f0599511a02c45fd28228f6b0f97237"
+        },
+        {
+          "source_path": "src/impls/std/function.rs",
+          "repository_path": "allocative/allocative/src/impls/std/function.rs",
+          "sha256": "e6dcc8b487d37ec4e4e67e6998f3f54322575b43c143dca991e342dd674484dd"
+        },
+        {
+          "source_path": "src/impls/std/mem.rs",
+          "repository_path": "allocative/allocative/src/impls/std/mem.rs",
+          "sha256": "fdb9af7cf21d553e24c3a5d57cde06392ae5d13afdac34e409ad1848e22e667e"
+        },
+        {
+          "source_path": "src/impls/std/net.rs",
+          "repository_path": "allocative/allocative/src/impls/std/net.rs",
+          "sha256": "d9323bc225e3ff0f5782153927b6646541196e1bcb76e4575f2f68f0cc125812"
+        },
+        {
+          "source_path": "src/impls/std/primitive.rs",
+          "repository_path": "allocative/allocative/src/impls/std/primitive.rs",
+          "sha256": "76902174c63931357d2ecd050e6c3f19874646c98a4adfa39bc29bdd423522af"
+        },
+        {
+          "source_path": "src/impls/std/sync.rs",
+          "repository_path": "allocative/allocative/src/impls/std/sync.rs",
+          "sha256": "e8811e63b777c90177ad057f4b77d66309316b34c93fdf1b041f027bd1c35752"
+        },
+        {
+          "source_path": "src/impls/std/sync_test_arc_align.src",
+          "repository_path": "allocative/allocative/src/impls/std/sync_test_arc_align.src",
+          "sha256": "79ec25145723adb27826f5a3a73c925913ac23c7f5a34b2b462cce45b41f4f7e"
+        },
+        {
+          "source_path": "src/impls/std/thread.rs",
+          "repository_path": "allocative/allocative/src/impls/std/thread.rs",
+          "sha256": "4e4163100066bfc39e1b69cac372d60ac7775b22d3d114d9ab8640bdc5b453cb"
+        },
+        {
+          "source_path": "src/impls/std/time.rs",
+          "repository_path": "allocative/allocative/src/impls/std/time.rs",
+          "sha256": "5028be12ba24d93a204e6e3bc3d0e1cbcbd9100ee4aad63cbd974ff3428d0c03"
+        },
+        {
+          "source_path": "src/impls/std/tuple.rs",
+          "repository_path": "allocative/allocative/src/impls/std/tuple.rs",
+          "sha256": "3c045988b1cd3fb00014fbb51466dc3fa0fea2bd47b62b38f7667144ced5a49a"
+        },
+        {
+          "source_path": "src/impls/std/unsorted.rs",
+          "repository_path": "allocative/allocative/src/impls/std/unsorted.rs",
+          "sha256": "731215a9194fcf0f1504adcef2672652d96930f883642152a833f2857624764f"
+        },
+        {
+          "source_path": "src/impls/tokio.rs",
+          "repository_path": "allocative/allocative/src/impls/tokio.rs",
+          "sha256": "35a4ca9faed1795328f73b20b8ea4cf573b30de82c0265435d59f1dad7276e53"
+        },
+        {
+          "source_path": "src/impls/triomphe.rs",
+          "repository_path": "allocative/allocative/src/impls/triomphe.rs",
+          "sha256": "2f0e32cd4a57e3ec7bea532ab917c34fffcb29b6e670954a774c54f94dd72e68"
+        },
+        {
+          "source_path": "src/impls/triomphe_test_align.src",
+          "repository_path": "allocative/allocative/src/impls/triomphe_test_align.src",
+          "sha256": "b83e6965a2dc1786d8a9c6d7f81209187b6385f53114aeefbd5a5743639221d1"
+        },
+        {
+          "source_path": "src/impls/triomphe_test_shared.src",
+          "repository_path": "allocative/allocative/src/impls/triomphe_test_shared.src",
+          "sha256": "ae30e47bd556f117a52f23fabc39e57c45403aa867489b91f8ce11ec296149c2"
+        },
+        {
+          "source_path": "src/impls/triomphe_test_simple.src",
+          "repository_path": "allocative/allocative/src/impls/triomphe_test_simple.src",
+          "sha256": "cc9ae4e9163a1409ff609907ad7e3a4f02f70b52722be2cb6cc79f7eced10aad"
+        },
+        {
+          "source_path": "src/key.rs",
+          "repository_path": "allocative/allocative/src/key.rs",
+          "sha256": "3c05bff05ebfa5a4930b9a8d26e9f48e87b9a0248ccc28b1ee734ef75112c76e"
+        },
+        {
+          "source_path": "src/lib.rs",
+          "repository_path": "allocative/allocative/src/lib.rs",
+          "sha256": "6c170a02dc0f1c4e12a04437adcd21ae20a57864372a1b77c398f07a8c268058"
+        },
+        {
+          "source_path": "src/size_of.rs",
+          "repository_path": "allocative/allocative/src/size_of.rs",
+          "sha256": "09863a0f8d964708c093eb8fc939db8a3db92d48d210bec95cfc121649008b3b"
+        },
+        {
+          "source_path": "src/test_derive.rs",
+          "repository_path": "allocative/allocative/src/test_derive.rs",
+          "sha256": "c4c80dba1c1b26961b2048631cdf03a54ae29b14f949b042b198fa16ddfd025c"
+        },
+        {
+          "source_path": "src/test_derive/bounds.rs",
+          "repository_path": "allocative/allocative/src/test_derive/bounds.rs",
+          "sha256": "c3c30dfe8372ba8cb533b25dc66eb8de01ea498b4d1e79d5d94af4f56d6a4c3a"
+        },
+        {
+          "source_path": "src/test_derive/dst.rs",
+          "repository_path": "allocative/allocative/src/test_derive/dst.rs",
+          "sha256": "90dd5e3b5e0125a630bf9ecb4d1fd25901cbcda76ab88477f9c9109c78ae3823"
+        },
+        {
+          "source_path": "src/test_derive/skip.rs",
+          "repository_path": "allocative/allocative/src/test_derive/skip.rs",
+          "sha256": "8f8e35de2f037b87c2f9df6242a68fa6622423aba50498043e7ea80239c39666"
+        },
+        {
+          "source_path": "src/test_derive/visit.rs",
+          "repository_path": "allocative/allocative/src/test_derive/visit.rs",
+          "sha256": "0820c731ae4dc407d7870b40e5aeae141a6cd76f407eedf1adf6767491bbf7e2"
+        },
+        {
+          "source_path": "src/test_derive/with_flamegraph.rs",
+          "repository_path": "allocative/allocative/src/test_derive/with_flamegraph.rs",
+          "sha256": "b331a36942c0e6f9d66655546286ebb8f0a112388fdd3ec055b304d9d8209137"
+        },
+        {
+          "source_path": "src/visitor.rs",
+          "repository_path": "allocative/allocative/src/visitor.rs",
+          "sha256": "a00a31ae3728bc990956f26c8f693ece6bdecca018d20bc63b04dc49afc299c8"
+        }
+      ],
+      "notice_files": [
+        {
+          "local_path": "reviewed-texts/starlark-rust/c778ec4fc7d250a8158f9a163ff450a112a59b3c/LICENSE",
+          "upstream_path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/facebook/starlark-rust/c778ec4fc7d250a8158f9a163ff450a112a59b3c/LICENSE",
+          "sha256": "50e6751797c50dedd75ef1b8a0d9e42f5f8472e9fbce91f34718e9f97b0c780a",
+          "content_kind": "full-license-text"
+        }
+      ]
+    },
+    {
+      "name": "allocative_derive",
+      "version": "0.3.6",
+      "source_archive_sha256": "614043c56c1173b800acb007b81fd0cbc0a0d7d717b71ba705fc2230d0760a23",
+      "basis": "byte-identical-published-source",
+      "repository": "https://github.com/facebook/starlark-rust",
+      "revision": "c778ec4fc7d250a8158f9a163ff450a112a59b3c",
+      "package_path": "allocative/allocative_derive",
+      "finding": "Every published Rust source and .src fixture, plus Cargo.toml.orig, matches this immutable repository snapshot byte for byte. Cargo-generated Cargo.toml and Cargo.lock are excluded from the repository comparison. Repository root notice texts are copied verbatim.",
+      "source_matches": [
+        {
+          "source_path": "Cargo.toml.orig",
+          "repository_path": "allocative/allocative_derive/Cargo.toml",
+          "sha256": "bfd1767fe5cfc0caad7c74d31dcf318c6a9f13c69b09986198365e3bbf29026a"
+        },
+        {
+          "source_path": "src/derive_allocative.rs",
+          "repository_path": "allocative/allocative_derive/src/derive_allocative.rs",
+          "sha256": "b8ffab726d363ffab1beebf645a3c6f68c8ab68ea769d0eef49776c30ff2ccfa"
+        },
+        {
+          "source_path": "src/lib.rs",
+          "repository_path": "allocative/allocative_derive/src/lib.rs",
+          "sha256": "369248b0133e83f17685b29786c185a41bc6b93fd4fac6abd6f751436a26e778"
+        },
+        {
+          "source_path": "src/root.rs",
+          "repository_path": "allocative/allocative_derive/src/root.rs",
+          "sha256": "3074c1355708f45ed82beefbf392b7a3f3d0da0fdc479af20e74c302960f5d28"
+        }
+      ],
+      "notice_files": [
+        {
+          "local_path": "reviewed-texts/starlark-rust/c778ec4fc7d250a8158f9a163ff450a112a59b3c/LICENSE",
+          "upstream_path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/facebook/starlark-rust/c778ec4fc7d250a8158f9a163ff450a112a59b3c/LICENSE",
+          "sha256": "50e6751797c50dedd75ef1b8a0d9e42f5f8472e9fbce91f34718e9f97b0c780a",
+          "content_kind": "full-license-text"
+        }
+      ]
+    },
+    {
+      "name": "pagable_derive",
+      "version": "0.4.1",
+      "source_archive_sha256": "838d17166587914f4e99353766c29160462b681511f08679545a0d07a0dc9415",
+      "basis": "byte-identical-published-source",
+      "repository": "https://github.com/facebook/starlark-rust",
+      "revision": "8978f3cd91b2908e1e61f6b58f84293097abf8f1",
+      "package_path": "pagable_derive",
+      "finding": "Every published Rust source and .src fixture, plus Cargo.toml.orig, matches this immutable repository snapshot byte for byte. Cargo-generated Cargo.toml and Cargo.lock are excluded from the repository comparison. Repository root notice texts are copied verbatim. Published .cargo_vcs_info.json names this same revision and package path; repository identity is corroborated by the matching full source tree.",
+      "source_matches": [
+        {
+          "source_path": "Cargo.toml.orig",
+          "repository_path": "pagable_derive/Cargo.toml",
+          "sha256": "8f9c90827fe9dbdaefa2ead4b35889c6e9525c2f756f2ea2c33ba47e5745051a"
+        },
+        {
+          "source_path": "src/derive_pagable.rs",
+          "repository_path": "pagable_derive/src/derive_pagable.rs",
+          "sha256": "4fa08f2debf74f45409527fc9b27b649a892accda06555c3be80b44ce9859103"
+        },
+        {
+          "source_path": "src/derive_pagable_panic.rs",
+          "repository_path": "pagable_derive/src/derive_pagable_panic.rs",
+          "sha256": "8ff1f9ddb605928d8c67a4a5aa6c1dd61420a857868e21be69939d477b77cd82"
+        },
+        {
+          "source_path": "src/derive_pagable_tagged.rs",
+          "repository_path": "pagable_derive/src/derive_pagable_tagged.rs",
+          "sha256": "f06f85a84143e6f14fb107e0cb025f4c0b5cf9e152113a72de0de360e928d8ea"
+        },
+        {
+          "source_path": "src/lib.rs",
+          "repository_path": "pagable_derive/src/lib.rs",
+          "sha256": "d5a6ac09935f885f642c9d71b6b02a18d8fe4553ec46d322b76ddb3eb29d87b0"
+        },
+        {
+          "source_path": "src/typetag.rs",
+          "repository_path": "pagable_derive/src/typetag.rs",
+          "sha256": "d42f5f55900ab7851c4834feb05f59d1efac05ebe275334733cf741374810392"
+        }
+      ],
+      "notice_files": [
+        {
+          "local_path": "reviewed-texts/starlark-rust/8978f3cd91b2908e1e61f6b58f84293097abf8f1/LICENSE",
+          "upstream_path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/facebook/starlark-rust/8978f3cd91b2908e1e61f6b58f84293097abf8f1/LICENSE",
+          "sha256": "50e6751797c50dedd75ef1b8a0d9e42f5f8472e9fbce91f34718e9f97b0c780a",
+          "content_kind": "full-license-text"
+        }
+      ]
+    },
+    {
+      "name": "display_container",
+      "version": "0.9.0",
+      "source_archive_sha256": "0a110a75c96bedec8e65823dea00a1d710288b7a369d95fd8a0f5127639466fa",
+      "basis": "byte-identical-published-source",
+      "repository": "https://github.com/facebookincubator/gazebo",
+      "revision": "13efb6d415c4729178dfccc36fa9c87491f0813d",
+      "package_path": "display_container",
+      "finding": "Every published Rust source and .src fixture, plus Cargo.toml.orig, matches this immutable repository snapshot byte for byte. Cargo-generated Cargo.toml and Cargo.lock are excluded from the repository comparison. Repository root notice texts are copied verbatim.",
+      "source_matches": [
+        {
+          "source_path": "Cargo.toml.orig",
+          "repository_path": "display_container/Cargo.toml",
+          "sha256": "9eb42b9aa1fa21f8d29340d5a1f299ee4a4490db25f116e9452abe7717afad39"
+        },
+        {
+          "source_path": "src/lib.rs",
+          "repository_path": "display_container/src/lib.rs",
+          "sha256": "13db2d71c93e61a6e9bdf52597a204f1ca6d017f68d0efb15c0598084b96add5"
+        }
+      ],
+      "notice_files": [
+        {
+          "local_path": "reviewed-texts/gazebo/13efb6d415c4729178dfccc36fa9c87491f0813d/LICENSE-APACHE",
+          "upstream_path": "LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/facebookincubator/gazebo/13efb6d415c4729178dfccc36fa9c87491f0813d/LICENSE-APACHE",
+          "sha256": "50e6751797c50dedd75ef1b8a0d9e42f5f8472e9fbce91f34718e9f97b0c780a",
+          "content_kind": "full-license-text"
+        },
+        {
+          "local_path": "reviewed-texts/gazebo/13efb6d415c4729178dfccc36fa9c87491f0813d/LICENSE-MIT",
+          "upstream_path": "LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/facebookincubator/gazebo/13efb6d415c4729178dfccc36fa9c87491f0813d/LICENSE-MIT",
+          "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+          "content_kind": "full-license-text"
+        }
+      ]
+    },
+    {
+      "name": "lock_free_hashtable",
+      "version": "0.1.4",
+      "source_archive_sha256": "ebf3631712f5b790675292ff827af269f5d9f920c920b77dc41d0485e3719612",
+      "basis": "byte-identical-published-source",
+      "repository": "https://github.com/facebook/buck2",
+      "revision": "48ae5c61c93c808e0831b27104d3bc7262f06bd4",
+      "package_path": "shed/lock_free_hashtable",
+      "finding": "Every published Rust source and .src fixture, plus Cargo.toml.orig, matches this immutable repository snapshot byte for byte. Cargo-generated Cargo.toml and Cargo.lock are excluded from the repository comparison. Repository root notice texts are copied verbatim.",
+      "source_matches": [
+        {
+          "source_path": "Cargo.toml.orig",
+          "repository_path": "shed/lock_free_hashtable/Cargo.toml",
+          "sha256": "94eca265bbc37b34b0c1e6f5ad8992e1c06d47c5cd9402e9824abdcddbb0c70d"
+        },
+        {
+          "source_path": "examples/stress.rs",
+          "repository_path": "shed/lock_free_hashtable/examples/stress.rs",
+          "sha256": "b17d7cc6a889eb11cf263a64250b158698425b5b95cd82cde0828852dd8f2fce"
+        },
+        {
+          "source_path": "src/atomic_value.rs",
+          "repository_path": "shed/lock_free_hashtable/src/atomic_value.rs",
+          "sha256": "54403a2f1cc51036368ffae012b1a6ff6cc21e8cf875a763daebae1a0a0522d3"
+        },
+        {
+          "source_path": "src/fixed_cap.rs",
+          "repository_path": "shed/lock_free_hashtable/src/fixed_cap.rs",
+          "sha256": "8b2225ded8534e07ce1f1c694b2b9a81c0db9ad5b2c2f093a69b857c323acc4b"
+        },
+        {
+          "source_path": "src/lib.rs",
+          "repository_path": "shed/lock_free_hashtable/src/lib.rs",
+          "sha256": "fbb09de705f0221006441738152312dc1254b922a087ded4c2f66ba828aedd4a"
+        },
+        {
+          "source_path": "src/raw.rs",
+          "repository_path": "shed/lock_free_hashtable/src/raw.rs",
+          "sha256": "0611935a6364e40dad51b0a2298b42acdcf771fd9db9b42be089fbd9786838ed"
+        },
+        {
+          "source_path": "src/sharded.rs",
+          "repository_path": "shed/lock_free_hashtable/src/sharded.rs",
+          "sha256": "e8eb717ab98eaf378eed284098be2f49c8f87d5a455ba24b7264cb52d95b4a49"
+        }
+      ],
+      "notice_files": [
+        {
+          "local_path": "reviewed-texts/buck2/48ae5c61c93c808e0831b27104d3bc7262f06bd4/LICENSE-APACHE",
+          "upstream_path": "LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/facebook/buck2/48ae5c61c93c808e0831b27104d3bc7262f06bd4/LICENSE-APACHE",
+          "sha256": "50e6751797c50dedd75ef1b8a0d9e42f5f8472e9fbce91f34718e9f97b0c780a",
+          "content_kind": "full-license-text"
+        },
+        {
+          "local_path": "reviewed-texts/buck2/48ae5c61c93c808e0831b27104d3bc7262f06bd4/LICENSE-MIT",
+          "upstream_path": "LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/facebook/buck2/48ae5c61c93c808e0831b27104d3bc7262f06bd4/LICENSE-MIT",
+          "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+          "content_kind": "full-license-text"
+        },
+        {
+          "local_path": "reviewed-texts/buck2/48ae5c61c93c808e0831b27104d3bc7262f06bd4/NOTICE",
+          "upstream_path": "NOTICE",
+          "url": "https://raw.githubusercontent.com/facebook/buck2/48ae5c61c93c808e0831b27104d3bc7262f06bd4/NOTICE",
+          "sha256": "b3355ad324483539ba40a8ad85bcaa5c03c19b6b54831e3f7f3b67f56ac4982e",
+          "content_kind": "attribution-notice"
+        }
+      ]
+    },
+    {
+      "name": "static_interner",
+      "version": "0.1.2",
+      "source_archive_sha256": "fab44341fbf4deae6e8d5ab450f24e1b34e0b2439d39ac0e9b5215a4e5493263",
+      "basis": "byte-identical-published-source",
+      "repository": "https://github.com/facebook/buck2",
+      "revision": "bb9114292d98db0a2919d37d673bb27f930e6aa1",
+      "package_path": "shed/static_interner",
+      "finding": "Every published Rust source and .src fixture, plus Cargo.toml.orig, matches this immutable repository snapshot byte for byte. Cargo-generated Cargo.toml and Cargo.lock are excluded from the repository comparison. Repository root notice texts are copied verbatim.",
+      "source_matches": [
+        {
+          "source_path": "Cargo.toml.orig",
+          "repository_path": "shed/static_interner/Cargo.toml",
+          "sha256": "128b24fc8a75912725e46b93446b67283ceae6c8139bc7b7e118591ee6dbde30"
+        },
+        {
+          "source_path": "src/lib.rs",
+          "repository_path": "shed/static_interner/src/lib.rs",
+          "sha256": "f8859299d67a5478a2038910f446e1104447c47314dc3bb276746e3924df06ac"
+        }
+      ],
+      "notice_files": [
+        {
+          "local_path": "reviewed-texts/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/LICENSE-APACHE",
+          "upstream_path": "LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/facebook/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/LICENSE-APACHE",
+          "sha256": "50e6751797c50dedd75ef1b8a0d9e42f5f8472e9fbce91f34718e9f97b0c780a",
+          "content_kind": "full-license-text"
+        },
+        {
+          "local_path": "reviewed-texts/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/LICENSE-MIT",
+          "upstream_path": "LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/facebook/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/LICENSE-MIT",
+          "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+          "content_kind": "full-license-text"
+        },
+        {
+          "local_path": "reviewed-texts/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/NOTICE",
+          "upstream_path": "NOTICE",
+          "url": "https://raw.githubusercontent.com/facebook/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/NOTICE",
+          "sha256": "b3355ad324483539ba40a8ad85bcaa5c03c19b6b54831e3f7f3b67f56ac4982e",
+          "content_kind": "attribution-notice"
+        }
+      ]
+    },
+    {
+      "name": "strong_hash",
+      "version": "0.1.0",
+      "source_archive_sha256": "0831334aea34390b6b6ec7af0a27f9ee6324ad3a69463e6b240d83d6b7bce9c9",
+      "basis": "byte-identical-published-source",
+      "repository": "https://github.com/facebook/buck2",
+      "revision": "bb9114292d98db0a2919d37d673bb27f930e6aa1",
+      "package_path": "gazebo/strong_hash",
+      "finding": "Every published Rust source and .src fixture, plus Cargo.toml.orig, matches this immutable repository snapshot byte for byte. Cargo-generated Cargo.toml and Cargo.lock are excluded from the repository comparison. Repository root notice texts are copied verbatim.",
+      "source_matches": [
+        {
+          "source_path": "Cargo.toml.orig",
+          "repository_path": "gazebo/strong_hash/Cargo.toml",
+          "sha256": "8e4b2ca9d3e354abbedbef94e22e19d8358bf497979bb6ec4c4bde0e1b3b5a23"
+        },
+        {
+          "source_path": "src/impls.rs",
+          "repository_path": "gazebo/strong_hash/src/impls.rs",
+          "sha256": "8453f587171bb1ba46211263be07ac595ff86284fc2edb1466df641db009c1b1"
+        },
+        {
+          "source_path": "src/impls/num_bigint.rs",
+          "repository_path": "gazebo/strong_hash/src/impls/num_bigint.rs",
+          "sha256": "11decb596ea5e7268d751a2067b7d9b7b1176fa672f5afb251f33f49b7d5c160"
+        },
+        {
+          "source_path": "src/impls/triomphe.rs",
+          "repository_path": "gazebo/strong_hash/src/impls/triomphe.rs",
+          "sha256": "c5c26079af2237e8b318dcdb1952292fd7895ac266e0f02026aee8b30052ba16"
+        },
+        {
+          "source_path": "src/lib.rs",
+          "repository_path": "gazebo/strong_hash/src/lib.rs",
+          "sha256": "f5fa77466c86ef7b8d7a5af2f034067a543431fd1047d38d9fcf66cb4ede43d7"
+        }
+      ],
+      "notice_files": [
+        {
+          "local_path": "reviewed-texts/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/LICENSE-APACHE",
+          "upstream_path": "LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/facebook/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/LICENSE-APACHE",
+          "sha256": "50e6751797c50dedd75ef1b8a0d9e42f5f8472e9fbce91f34718e9f97b0c780a",
+          "content_kind": "full-license-text"
+        },
+        {
+          "local_path": "reviewed-texts/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/LICENSE-MIT",
+          "upstream_path": "LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/facebook/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/LICENSE-MIT",
+          "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+          "content_kind": "full-license-text"
+        },
+        {
+          "local_path": "reviewed-texts/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/NOTICE",
+          "upstream_path": "NOTICE",
+          "url": "https://raw.githubusercontent.com/facebook/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/NOTICE",
+          "sha256": "b3355ad324483539ba40a8ad85bcaa5c03c19b6b54831e3f7f3b67f56ac4982e",
+          "content_kind": "attribution-notice"
+        }
+      ]
+    },
+    {
+      "name": "strong_hash_derive",
+      "version": "0.1.0",
+      "source_archive_sha256": "ace6b48b7c4383a39bd3b966cca41bc999003aab9f690a2f355525c924296928",
+      "basis": "byte-identical-published-source",
+      "repository": "https://github.com/facebook/buck2",
+      "revision": "bb9114292d98db0a2919d37d673bb27f930e6aa1",
+      "package_path": "gazebo/strong_hash_derive",
+      "finding": "Every published Rust source and .src fixture, plus Cargo.toml.orig, matches this immutable repository snapshot byte for byte. Cargo-generated Cargo.toml and Cargo.lock are excluded from the repository comparison. Repository root notice texts are copied verbatim.",
+      "source_matches": [
+        {
+          "source_path": "Cargo.toml.orig",
+          "repository_path": "gazebo/strong_hash_derive/Cargo.toml",
+          "sha256": "7e4bc1b1fd90dd8ba3591578677b27ada47c5dabab3ad0cc6db5a2599a9a37ec"
+        },
+        {
+          "source_path": "src/lib.rs",
+          "repository_path": "gazebo/strong_hash_derive/src/lib.rs",
+          "sha256": "391f35b3f1387f7408b135b95458d52eab89713f52f76553254c4dddc54a6185"
+        }
+      ],
+      "notice_files": [
+        {
+          "local_path": "reviewed-texts/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/LICENSE-APACHE",
+          "upstream_path": "LICENSE-APACHE",
+          "url": "https://raw.githubusercontent.com/facebook/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/LICENSE-APACHE",
+          "sha256": "50e6751797c50dedd75ef1b8a0d9e42f5f8472e9fbce91f34718e9f97b0c780a",
+          "content_kind": "full-license-text"
+        },
+        {
+          "local_path": "reviewed-texts/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/LICENSE-MIT",
+          "upstream_path": "LICENSE-MIT",
+          "url": "https://raw.githubusercontent.com/facebook/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/LICENSE-MIT",
+          "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+          "content_kind": "full-license-text"
+        },
+        {
+          "local_path": "reviewed-texts/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/NOTICE",
+          "upstream_path": "NOTICE",
+          "url": "https://raw.githubusercontent.com/facebook/buck2/bb9114292d98db0a2919d37d673bb27f930e6aa1/NOTICE",
+          "sha256": "b3355ad324483539ba40a8ad85bcaa5c03c19b6b54831e3f7f3b67f56ac4982e",
+          "content_kind": "attribution-notice"
+        }
+      ]
+    },
+    {
+      "name": "cesu8",
+      "version": "1.1.0",
+      "source_archive_sha256": "6d43a04d8753f35258c91f8ec639f792891f748a1edbd759cf1dcea3382ad83c",
+      "basis": "explicit-published-source-license-link",
+      "selected_license": "Apache-2.0",
+      "finding": "Published copyright/license header explicitly offers Apache License, Version 2.0 and links the ASF terms. The authoritative ASF plain-text terms are preserved verbatim together with the exact published attribution or license statement. No copyright holder or grant is synthesized. Official terms do not count as a recovered source-provided upstream license file.",
+      "source_matches": [
+        {
+          "source_path": "src/lib.rs",
+          "sha256": "402f647c80ccaa86f43a5571cc081aa66777d2a538ce9d9dc52a7e588ef137c9",
+          "required_reference": "http://www.apache.org/licenses/LICENSE-2.0"
+        },
+        {
+          "source_path": "Cargo.toml",
+          "sha256": "78e66dd24c12e0ac858e7524cdd7d51d1eee753c1e9c32e5b915dc9f1d767870",
+          "required_reference": "Apache-2.0"
+        }
+      ],
+      "notice_files": [
+        {
+          "local_path": "reviewed-texts/apache/Apache-2.0.txt",
+          "upstream_path": "Apache-2.0.txt",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+          "linked_from": "http://www.apache.org/licenses/LICENSE-2.0",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "content_kind": "official-license-text"
+        }
+      ]
+    },
+    {
+      "name": "fxhash",
+      "version": "0.2.1",
+      "source_archive_sha256": "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c",
+      "basis": "explicit-published-source-license-link",
+      "selected_license": "Apache-2.0",
+      "finding": "Published copyright/license header explicitly offers Apache License, Version 2.0 and links the ASF terms. The authoritative ASF plain-text terms are preserved verbatim together with the exact published attribution or license statement. No copyright holder or grant is synthesized. Official terms do not count as a recovered source-provided upstream license file.",
+      "source_matches": [
+        {
+          "source_path": "lib.rs",
+          "sha256": "885b72a1c977dc1c3ff4e0652719e62b6d8c3e713403e571afd581283f72df7b",
+          "required_reference": "http://www.apache.org/licenses/LICENSE-2.0"
+        },
+        {
+          "source_path": "Cargo.toml",
+          "sha256": "83bb4c3e7fbfb7380c175923ba7dfe150e4e09bd4ebfb45e65e5f8a494d36ab9",
+          "required_reference": "Apache-2.0"
+        }
+      ],
+      "notice_files": [
+        {
+          "local_path": "reviewed-texts/apache/Apache-2.0.txt",
+          "upstream_path": "Apache-2.0.txt",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+          "linked_from": "http://www.apache.org/licenses/LICENSE-2.0",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "content_kind": "official-license-text"
+        }
+      ]
+    },
+    {
+      "name": "eventsource-stream",
+      "version": "0.2.3",
+      "source_archive_sha256": "74fef4569247a5f429d9156b9d0a2599914385dd189c539334c625d8099d90ab",
+      "basis": "explicit-published-apache-alternative",
+      "selected_license": "Apache-2.0",
+      "finding": "Published Cargo.toml and README explicitly offer an Apache-2.0 alternative; this distribution elects Apache-2.0. The authoritative ASF plain-text terms are preserved verbatim together with the exact published attribution or license statement. No copyright holder or grant is synthesized. Official terms do not count as a recovered source-provided upstream license file.",
+      "source_matches": [
+        {
+          "source_path": "README.md",
+          "sha256": "f17f6cc26f19643dbadaaad9901d245d4645ef8fbac8266b33105392dd1f8601",
+          "required_reference": "Apache-2.0"
+        },
+        {
+          "source_path": "Cargo.toml",
+          "sha256": "b3a669f64604f19acae611ec2e7b1abb70560d920d23dab003e5090d023a8d83",
+          "required_reference": "Apache-2.0"
+        }
+      ],
+      "notice_files": [
+        {
+          "local_path": "reviewed-texts/apache/Apache-2.0.txt",
+          "upstream_path": "Apache-2.0.txt",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "content_kind": "official-license-text"
+        }
+      ]
+    },
+    {
+      "name": "io_tee",
+      "version": "0.1.1",
+      "source_archive_sha256": "4b3f7cef34251886990511df1c61443aa928499d598a9473929ab5a90a527304",
+      "basis": "explicit-published-apache-alternative",
+      "selected_license": "Apache-2.0",
+      "finding": "Published Cargo.toml and README explicitly offer an Apache-2.0 alternative; this distribution elects Apache-2.0. The authoritative ASF plain-text terms are preserved verbatim together with the exact published attribution or license statement. No copyright holder or grant is synthesized. Official terms do not count as a recovered source-provided upstream license file.",
+      "source_matches": [
+        {
+          "source_path": "README.md",
+          "sha256": "0ba20a4b5d8188a85014c5f6d52b5407aec2077986c05f6ba686f9899b767b95",
+          "required_reference": "Apache License, Version 2.0"
+        },
+        {
+          "source_path": "Cargo.toml",
+          "sha256": "361d0548c8284b9d033b3a94e75bd540c382da1fdbf62f1e99c7562a06ece5e1",
+          "required_reference": "Apache-2.0"
+        }
+      ],
+      "notice_files": [
+        {
+          "local_path": "reviewed-texts/apache/Apache-2.0.txt",
+          "upstream_path": "Apache-2.0.txt",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "content_kind": "official-license-text"
+        }
+      ]
+    },
+    {
+      "name": "debugserver-types",
+      "version": "0.5.0",
+      "source_archive_sha256": "2bf6834a70ed14e8e4e41882df27190bea150f1f6ecf461f1033f8739cd8af4a",
+      "basis": "published-mit-declaration-and-matched-schema-attribution",
+      "selected_license": "MIT",
+      "finding": "The exact crate manifest declares MIT and names Markus Westerlind; those original bytes are retained without adding a copyright holder or year. Its schema is identical to the pinned Microsoft Debug Adapter Protocol after removing carriage-return bytes, and is used by schemafy to generate Rust bindings. The historical Microsoft terms distinguish MIT code from CC-BY-3.0-US documentation. The original terms, Microsoft's later authentic full MIT clarification and the official CC-BY-3.0-US terms, source credit, schema use, and byte-formatting difference are retained conservatively across both categories. This is a documented distribution disposition; no missing crate-authored LICENSE file is represented as recovered.",
+      "source_matches": [
+        {
+          "source_path": "Cargo.toml",
+          "sha256": "f571b778494de4e86f6116d96cbfe222d954e8d1eb2f15f1b565cf34bd436b2d"
+        },
+        {
+          "source_path": "Cargo.toml.orig",
+          "sha256": "705e49bb282781302ca3b45f594fa5454f2a321581b905dcf4c3f2934e0bc318"
+        },
+        {
+          "source_path": "README.md",
+          "sha256": "a9be5a08a3444fead2ac90a390dc3316c28330ba1bf2d16399c7bcad561a8770"
+        },
+        {
+          "source_path": "src/lib.rs",
+          "sha256": "db852b48aedef90a6918f079f1e39d6745de37118cdaded43f20e9790912139a"
+        },
+        {
+          "source_path": "src/schema.json",
+          "sha256": "732f72c4b2fea24a0cbf1129f6a572a143384fa51b7eb315f6152095170ee833"
+        }
+      ],
+      "preserve_sources": [
+        "Cargo.toml.orig",
+        "README.md",
+        "src/lib.rs"
+      ],
+      "schema_provenance": {
+        "repository": "https://github.com/microsoft/debug-adapter-protocol",
+        "revision": "4102c794ea44a36ec7153dfa3cc1609f1a0e792d",
+        "repository_path": "debugAdapterProtocol.json",
+        "repository_sha256": "60b8cb58487d1198e70c2bda40f191ae4eebb812925c0f4270d1df01c2818ab9",
+        "published_source_sha256": "732f72c4b2fea24a0cbf1129f6a572a143384fa51b7eb315f6152095170ee833",
+        "comparison": "Identical bytes after removing CR (0x0d) bytes from both inputs; parsed JSON equal. No substantive schema changes.",
+        "license_clarification_revision": "36fbbbb136becbe7f1fa0350f7bf2dcfe989cb2e",
+        "license_clarification_issue": "https://github.com/microsoft/debug-adapter-protocol/issues/405",
+        "license_clarification_pull": "https://github.com/microsoft/debug-adapter-protocol/pull/431",
+        "documentation_terms_url": "https://creativecommons.org/licenses/by/3.0/us/legalcode",
+        "later_combined_license_caution": "The later combined Microsoft License.txt appends CC-BY-4.0 terms despite its 3.0-US heading. Those later documentation terms are not substituted for the historical 3.0-US grant."
+      },
+      "notice_files": [
+        {
+          "local_path": "reviewed-texts/debug-adapter-protocol/4102c794ea44a36ec7153dfa3cc1609f1a0e792d/License.txt",
+          "upstream_path": "4102c794ea44a36ec7153dfa3cc1609f1a0e792d/License.txt",
+          "url": "https://raw.githubusercontent.com/microsoft/debug-adapter-protocol/4102c794ea44a36ec7153dfa3cc1609f1a0e792d/License.txt",
+          "sha256": "8f1242d5b277faab16d63f91b381b185ab3a12435341ad80c0478cb4226cdb91",
+          "content_kind": "original-terms-and-copyright"
+        },
+        {
+          "local_path": "reviewed-texts/debug-adapter-protocol/36fbbbb136becbe7f1fa0350f7bf2dcfe989cb2e/License-code.txt",
+          "upstream_path": "36fbbbb136becbe7f1fa0350f7bf2dcfe989cb2e/License-code.txt",
+          "url": "https://raw.githubusercontent.com/microsoft/debug-adapter-protocol/36fbbbb136becbe7f1fa0350f7bf2dcfe989cb2e/License-code.txt",
+          "sha256": "646f8936b8ddcd14e13e578ff6857e368780b0d1a4f6066bee89211923a373e2",
+          "content_kind": "upstream-license-clarification"
+        },
+        {
+          "local_path": "reviewed-texts/creative-commons/CC-BY-3.0-US.html",
+          "upstream_path": "CC-BY-3.0-US.html",
+          "url": "https://creativecommons.org/licenses/by/3.0/us/legalcode",
+          "sha256": "f4d77c7b7e4564d4e8691409d3a656047dae972377c106e5640434fb1418306f",
+          "content_kind": "official-license-text"
+        }
+      ]
+    }
+  ],
+  "remaining_gaps": []
+}
