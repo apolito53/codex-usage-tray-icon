@@ -111,7 +111,7 @@ try {
     $fiveChoice = $contextType.GetField('_trayFiveHourChoiceItem', $instanceFlags).GetValue($context)
     $weeklyChoice = $contextType.GetField('_trayWeeklyChoiceItem', $instanceFlags).GetValue($context)
     $trayMenu = $contextType.GetField('_trayWindowMenuItem', $instanceFlags).GetValue($context)
-    if (-not $trayMenu.Visible) { throw 'Plus tray switch menu is hidden' }
+    if (-not $trayMenu.Available) { throw 'Plus tray switch menu is unavailable' }
     if (-not $fiveChoice.Checked -or $weeklyChoice.Checked) { throw '5-hour selection not checked' }
     $chosen = Call-Context 'GetSelectedTrayWindow' @($plus)
     $chosenRemaining = $chosen.GetType().GetProperty('RemainingPercent', $instanceFlags).GetValue($chosen, $null)
@@ -137,7 +137,7 @@ try {
     Set-Field '_latestSnapshot' $snapshot
     Call-Context 'ApplySnapshot' @($snapshot)
     if ($fiveItem.Visible) { throw 'Five-hour row remains visible on Pro' }
-    if ($trayMenu.Visible) { throw 'Tray switch appears for Pro' }
+    if ($trayMenu.Available) { throw 'Tray switch appears for Pro' }
     if ($weeklyItem.Text -ne 'Codex: 75% weekly left') { throw 'Pro menu changed' }
     Write-Host 'Passed Windows menu, left-click balloon, offline, recovery, and selectable Plus/Pro icon checks.'
 } finally {
