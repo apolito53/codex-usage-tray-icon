@@ -446,9 +446,9 @@ namespace CodexUsageTray
             UsageWindowSnapshot fiveHour = snapshot.FiveHourWindow;
             UsageWindowSnapshot weekly = snapshot.WeeklyWindow;
             Icon nextIcon = TrayIconRenderer.CreateDualStatusIcon(
-                fiveHour == null ? "--" : fiveHour.RemainingPercent.ToString(),
+                fiveHour == null ? "??" : fiveHour.RemainingPercent.ToString(),
                 fiveHour == null ? Color.DimGray : GetUsageColor(fiveHour.RemainingPercent),
-                weekly == null ? "--" : weekly.RemainingPercent.ToString(),
+                weekly == null ? "??" : weekly.RemainingPercent.ToString(),
                 weekly == null ? Color.DimGray : GetUsageColor(weekly.RemainingPercent),
                 showOfflineBadge);
             Icon previousIcon = _currentIcon;
