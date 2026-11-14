@@ -723,8 +723,8 @@ def write_dual_status_icon(
     """Plus-only capsule, constrained to the square AppIndicator icon slot."""
     icon_root = cache_directory() / "icons"
     icon_root.mkdir(parents=True, exist_ok=True)
-    left = short_text if re.fullmatch(r"(?:[0-9]{1,3}|--)", short_text) else "--"
-    right = weekly_text if re.fullmatch(r"(?:[0-9]{1,3}|--)", weekly_text) else "--"
+    left = short_text if re.fullmatch(r"(?:[0-9]{1,3}|\?\?)", short_text) else "??"
+    right = weekly_text if re.fullmatch(r"(?:[0-9]{1,3}|\?\?)", weekly_text) else "??"
     state = "offline" if offline else "online"
     icon_name = "codex-usage-v4-dual-{}-{}-{}-{}-{}".format(
         left, right, short_color.lstrip("#"), weekly_color.lstrip("#"), state
@@ -1091,9 +1091,9 @@ class TrayApplication:
         five = snapshot.five_hour_remaining_percent
         week = snapshot.weekly_remaining_percent
         icon_root, icon_name = write_dual_status_icon(
-            str(five) if five is not None else "--",
+            str(five) if five is not None else "??",
             self._usage_color(five) if five is not None else "#6e7781",
-            str(week) if week is not None else "--",
+            str(week) if week is not None else "??",
             self._usage_color(week) if week is not None else "#6e7781",
             offline,
         )
