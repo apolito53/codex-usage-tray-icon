@@ -36,6 +36,25 @@ foreach ($case in $cases) {
 }
 Write-Host "Passed $count Windows credit parser/formatter cases."
 
+
+# Exercise the two-window Plus path and verify Pro remains on the circular icon.
+$plusResponse = $serializer.DeserializeObject('{"result":{"rateLimits":{"planType":"plus","primary":{"usedPercent":25,"windowDurationMins":300,"resetsAt":1800000000},"secondary":{"usedPercent":42,"windowDurationMins":10080,"resetsAt":1900000000}}}}')
+$plus = $parser.Invoke($null, @($plusResponse))
+$instanceFlags = [Reflection.BindingFlags]'Instance,NonPublic'
+$five = $plus.GetType().GetProperty('FiveHourWindow', $instanceFlags).GetValue($plus, $null)
+$week = $plus.GetType().GetProperty('WeeklyWindow', $instanceFlags).GetValue($plus, $null)
+if ($five.RemainingPercent -ne 75 -or $week.RemainingPercent -ne 58) { throw 'Plus dual quota parsing failed' }
+if (-not $plus.IsPlus) { throw 'Plus plan detection failed' }
+
+$missingResponse = $serializer.DeserializeObject('{"result":{"rateLimits":{"planType":"plus","primary":{"usedPercent":42,"windowDurationMins":10080}}}}')
+$missing = $parser.Invoke($null, @($missingResponse))
+if ($missing.FiveHourWindow) { throw 'Missing five-hour quota treated as a value' }
+$renderer = $assembly.GetType('CodexUsageTray.TrayIconRenderer')
+$dual = $renderer.GetMethod('CreateDualStatusIcon', $flags)
+$unknown = $dual.Invoke($null, @('??', [Drawing.Color]::DimGray, '58', [Drawing.Color]::Green, $false))
+if (-not $unknown) { throw 'Failed to render unknown-value Plus capsule' }
+$unknown.Dispose()
+
 Add-Type -AssemblyName System.Windows.Forms
 $contextType = $assembly.GetType('CodexUsageTray.TrayApplicationContext')
 $context = [Runtime.Serialization.FormatterServices]::GetUninitializedObject($contextType)
@@ -47,7 +66,7 @@ function Call-Context($name, $values) {
     }
     $contextType.GetMethod($name, $instanceFlags).Invoke($context, $arguments)
 }
-foreach ($name in @('_summaryItem', '_resetItem', '_resetCreditsItem', '_prepaidCreditsItem', '_statusItem')) {
+foreach ($name in @('_summaryItem', '_fiveHourItem', '_fiveHourResetItem', '_resetItem', '_resetCreditsItem', '_prepaidCreditsItem', '_statusItem')) {
     Set-Field $name (New-Object System.Windows.Forms.ToolStripMenuItem)
 }
 $notify = New-Object System.Windows.Forms.NotifyIcon
@@ -66,7 +85,23 @@ try {
     if ($row.Text -ne 'Prepaid credits: 3 - STALE') { throw 'Stale balance missing' }
     Call-Context 'ApplySnapshot' @($snapshot)
     if ($row.Text -ne 'Prepaid credits: 3') { throw 'Recovery did not clear stale state' }
-    Write-Host 'Passed Windows menu, left-click balloon, offline, and recovery checks.'
+    Set-Field '_latestSnapshot' $plus
+    Call-Context 'ApplySnapshot' @($plus)
+    $fiveItem = $contextType.GetField('_fiveHourItem', $instanceFlags).GetValue($context)
+    $weeklyItem = $contextType.GetField('_summaryItem', $instanceFlags).GetValue($context)
+    if ($fiveItem.Text -ne '5-hour: 75% left') { throw 'Plus menu missing five-hour quota' }
+    if ($weeklyItem.Text -ne 'Weekly: 58% left') { throw 'Plus menu missing weekly quota' }
+    Call-Context 'ApplyError' @([Exception]::new('Synthetic offline test'))
+    if ($fiveItem.Text -ne '5-hour: 75% left - STALE') { throw 'Stale Plus value missing' }
+
+    Set-Field '_latestSnapshot' $missing
+    Call-Context 'ApplySnapshot' @($missing)
+    if ($fiveItem.Text -ne '5-hour: unavailable left') { throw 'Unknown Plus quota not explicit' }
+    Set-Field '_latestSnapshot' $snapshot
+    Call-Context 'ApplySnapshot' @($snapshot)
+    if ($fiveItem.Visible) { throw 'Five-hour row remains visible on Pro' }
+    if ($weeklyItem.Text -ne 'Codex: 75% weekly left') { throw 'Pro menu changed' }
+    Write-Host 'Passed Windows menu, left-click balloon, offline, recovery, Plus and Pro checks.'
 } finally {
     $timer.Stop(); $timer.Dispose(); $notify.Dispose()
     $icon = $contextType.GetField('_currentIcon', $instanceFlags).GetValue($context)
