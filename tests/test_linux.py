@@ -23,7 +23,7 @@ def make_executable(path: Path) -> None:
 class PrepaidCreditTests(unittest.TestCase):
     def test_menu_stale_missing_and_recovery(self):
         app = object.__new__(tray.TrayApplication)
-        for name in ("summary_item", "reset_item", "prepaid_credits_item", "status_item", "_replace_icon", "_apply_reset_credit_menu"):
+        for name in ("summary_item", "five_hour_item", "five_hour_reset_item", "reset_item", "prepaid_credits_item", "status_item", "_replace_snapshot_icon", "_replace_icon", "_apply_reset_credit_menu"):
             setattr(app, name, mock.Mock())
         snapshot = tray.parse_usage_response({"result": {"rateLimits": {
             "primary": {"usedPercent": 25}, "credits": {"balance": "12.50"}
@@ -39,6 +39,36 @@ class PrepaidCreditTests(unittest.TestCase):
         app.prepaid_credits_item.set_label.assert_called_with("Prepaid credits: unavailable")
         app._apply_snapshot(snapshot)
         app.prepaid_credits_item.set_label.assert_called_with("Prepaid credits: 12.50")
+
+
+    def test_plus_menu_and_offline_state(self):
+        app = object.__new__(tray.TrayApplication)
+        for name in ("summary_item", "five_hour_item", "five_hour_reset_item",
+                     "reset_item", "prepaid_credits_item", "status_item",
+                     "_replace_snapshot_icon", "_apply_reset_credit_menu"):
+            setattr(app, name, mock.Mock())
+        snapshot = tray.parse_usage_response({"result": {"rateLimits": {
+            "planType": "plus",
+            "primary": {"usedPercent": 25, "windowDurationMins": 300},
+            "secondary": {"usedPercent": 42, "windowDurationMins": 10080},
+        }}})
+        app.latest_snapshot = snapshot
+        app._apply_snapshot(snapshot)
+        app.five_hour_item.show.assert_called_once()
+        app.five_hour_item.set_label.assert_called_with("5-hour: 75% left")
+        app.summary_item.set_label.assert_called_with("Weekly: 58% left")
+        app.reset_item.set_label.assert_called_with("Weekly resets unavailable")
+        app._replace_snapshot_icon.assert_called_with(snapshot, False)
+
+        app._apply_error(RuntimeError("offline"))
+        app.five_hour_item.set_label.assert_called_with("5-hour: 75% left - STALE")
+        app._replace_snapshot_icon.assert_called_with(snapshot, True)
+
+        pro = tray.dataclasses.replace(snapshot, plan_type="pro")
+        app._apply_snapshot(pro)
+        app.five_hour_item.hide.assert_called()
+        app.five_hour_reset_item.hide.assert_called()
+        app.summary_item.set_label.assert_called_with("Codex: 58% weekly left")
 
     def test_credit_states_and_bucket_selection(self):
         cases = [
@@ -222,6 +252,32 @@ class UsageParserTests(unittest.TestCase):
         self.assertIsInstance(snapshot.reset_credit_expiries[0], dt.datetime)
         self.assertIsNone(snapshot.reset_credit_expiries[1])
 
+
+    def test_plus_reads_both_windows_and_tolerates_missing_five_hour_data(self):
+        five = {"usedPercent": 18, "windowDurationMins": 300, "resetsAt": 1800000000}
+        weekly = {"usedPercent": 62, "windowDurationMins": 10080, "resetsAt": 1900000000}
+        response = {"result": {"rateLimits": {
+            "planType": "plus", "primary": weekly, "secondary": five,
+        }}}
+        snapshot = tray.parse_usage_response(response)
+        self.assertTrue(snapshot.is_plus)
+        self.assertEqual(82, snapshot.five_hour_remaining_percent)
+        self.assertEqual(38, snapshot.weekly_remaining_percent)
+        self.assertEqual(38, snapshot.remaining_percent)
+        self.assertIsNotNone(snapshot.five_hour_reset_at_local)
+        self.assertIsNotNone(snapshot.weekly_reset_at_local)
+
+        response["result"]["rateLimits"]["secondary"] = None
+        missing = tray.parse_usage_response(response)
+        self.assertIsNone(missing.five_hour_remaining_percent)
+        self.assertIsNone(missing.five_hour_reset_at_local)
+        self.assertEqual(38, missing.weekly_remaining_percent)
+
+        self.assertEqual("plus", tray.parse_account_plan({"result": {
+            "account": {"type": "chatgpt", "planType": "plus"}}}))
+        self.assertIsNone(tray.parse_account_plan({"result": {
+            "account": {"type": "apiKey"}}}))
+
     def test_falls_back_to_legacy_bucket_and_clamps_percent(self):
         response = {
             "result": {
@@ -277,6 +333,25 @@ class IconTests(unittest.TestCase):
                     os.environ.pop("XDG_CACHE_HOME", None)
                 else:
                     os.environ["XDG_CACHE_HOME"] = old_cache
+
+
+
+    def test_plus_pill_icon_uses_question_marks_without_touching_pro_circle(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with mock.patch.dict(os.environ, {"XDG_CACHE_HOME": temporary}):
+                root, name = tray.write_dual_status_icon(
+                    "??", "#6e7781", "38", "#cf222e", True
+                )
+                contents = (root / (name + ".svg")).read_text(encoding="utf-8")
+                self.assertIn('rx="20"', contents)
+                self.assertIn(">??</text>", contents)
+                self.assertIn(">38</text>", contents)
+                self.assertIn('circle cx="55"', contents)
+                self.assertIn("-dual-", name)
+                _, pro_name = tray.write_status_icon("38", "#cf222e", False)
+                pro_contents = (root / (pro_name + ".svg")).read_text(encoding="utf-8")
+                self.assertIn('r="30.5"', pro_contents)
+                self.assertNotIn('rx="20"', pro_contents)
 
 
 class DesktopIntegrationTests(unittest.TestCase):

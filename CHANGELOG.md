@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Plus desktop trays show a split-color capsule with the remaining five-hour
+  allowance on the left and weekly allowance on the right. Missing values show
+  `??` on the icon and `unavailable` in the menu. Both reset times appear in
+  the menu, and disconnected readings are marked stale. Pro retains its
+  original circular weekly icon and menu.
+- Added desktop build, Linux test and Windows regression checks in CI.
+
+
 - Android 0.2.1 installs alongside older previews, including previews signed
   on another machine. Both native libraries now use 16 KB ELF alignment.
 

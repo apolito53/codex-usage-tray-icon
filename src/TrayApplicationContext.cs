@@ -16,6 +16,8 @@ namespace CodexUsageTray
         private readonly NotifyIcon _notifyIcon;
         private readonly Timer _refreshTimer;
         private readonly ToolStripMenuItem _summaryItem;
+        private readonly ToolStripMenuItem _fiveHourItem;
+        private readonly ToolStripMenuItem _fiveHourResetItem;
         private readonly ToolStripMenuItem _resetItem;
         private readonly ToolStripMenuItem _resetCreditsItem;
         private readonly ToolStripMenuItem _prepaidCreditsItem;
@@ -38,6 +40,16 @@ namespace CodexUsageTray
             _summaryItem = new ToolStripMenuItem("Codex usage: loading…")
             {
                 Enabled = false
+            };
+            _fiveHourItem = new ToolStripMenuItem("5-hour: loading…")
+            {
+                Enabled = false,
+                Visible = false
+            };
+            _fiveHourResetItem = new ToolStripMenuItem("5-hour reset: loading…")
+            {
+                Enabled = false,
+                Visible = false
             };
             _resetItem = new ToolStripMenuItem("Reset time: loading…")
             {
@@ -65,6 +77,8 @@ namespace CodexUsageTray
             exitItem.Click += delegate { ExitThread(); };
 
             var menu = new ContextMenuStrip();
+            menu.Items.Add(_fiveHourItem);
+            menu.Items.Add(_fiveHourResetItem);
             menu.Items.Add(_summaryItem);
             menu.Items.Add(_resetItem);
             menu.Items.Add(_resetCreditsItem);
@@ -182,11 +196,21 @@ namespace CodexUsageTray
 
         private void ApplySnapshot(UsageSnapshot snapshot)
         {
-            _summaryItem.Text = FormatUsageSummary(snapshot, string.Empty);
+            _fiveHourItem.Visible = snapshot.IsPlus;
+            _fiveHourResetItem.Visible = snapshot.IsPlus;
+            if (snapshot.IsPlus)
+            {
+                _fiveHourItem.Text = FormatFiveHourSummary(snapshot, string.Empty);
+                _fiveHourResetItem.Text = FormatWindowReset(
+                    "5-hour", snapshot.FiveHourWindow);
+            }
 
-            _resetItem.Text = snapshot.ResetAtLocal.HasValue
-                ? "Resets " + snapshot.ResetAtLocal.Value.ToString("ddd, MMM d 'at' h:mm tt")
-                : "Reset time unavailable";
+            _summaryItem.Text = FormatUsageSummary(snapshot, string.Empty);
+            _resetItem.Text = snapshot.IsPlus
+                ? FormatWindowReset("Weekly", snapshot.WeeklyWindow)
+                : snapshot.ResetAtLocal.HasValue
+                    ? "Resets " + snapshot.ResetAtLocal.Value.ToString("ddd, MMM d 'at' h:mm tt")
+                    : "Reset time unavailable";
 
             ApplyResetCreditMenu(snapshot);
             _prepaidCreditsItem.Text = PrepaidCredits.Format(snapshot.PrepaidCredits);
@@ -195,18 +219,22 @@ namespace CodexUsageTray
                 "Online - updated " +
                 snapshot.CheckedAtLocal.ToString("h:mm:ss tt");
 
-            string tooltip = string.Format(
-                "Codex: {0}% left - {1} - reset {2}",
-                snapshot.RemainingPercent,
-                FormatResetCredits(snapshot.AvailableResetCredits),
-                snapshot.ResetAtLocal.HasValue
-                    ? snapshot.ResetAtLocal.Value.ToString("ddd h:mm tt")
-                    : "unknown");
+            string tooltip = snapshot.IsPlus
+                ? string.Format(
+                    "Codex Plus: 5h {0} | week {1} - {2}",
+                    FormatWindowPercent(snapshot.FiveHourWindow),
+                    FormatWindowPercent(snapshot.WeeklyWindow),
+                    FormatResetCredits(snapshot.AvailableResetCredits))
+                : string.Format(
+                    "Codex: {0}% left - {1} - reset {2}",
+                    snapshot.RemainingPercent,
+                    FormatResetCredits(snapshot.AvailableResetCredits),
+                    snapshot.ResetAtLocal.HasValue
+                        ? snapshot.ResetAtLocal.Value.ToString("ddd h:mm tt")
+                        : "unknown");
 
             _notifyIcon.Text = TruncateTooltip(tooltip);
-            ReplaceIcon(
-                snapshot.RemainingPercent.ToString(),
-                GetUsageColor(snapshot.RemainingPercent));
+            ReplaceSnapshotIcon(snapshot, false);
             SetRefreshTimerInterval(RefreshIntervalMilliseconds);
         }
 
@@ -221,18 +249,27 @@ namespace CodexUsageTray
                 _summaryItem.Text = FormatUsageSummary(
                     _latestSnapshot,
                     " - STALE");
+                if (_latestSnapshot.IsPlus)
+                {
+                    _fiveHourItem.Text = FormatFiveHourSummary(
+                        _latestSnapshot, " - STALE");
+                    _fiveHourResetItem.Text = FormatWindowReset(
+                        "5-hour", _latestSnapshot.FiveHourWindow) + " - STALE";
+                }
                 _statusItem.Text = string.Format(
                     "OFFLINE - showing {0} reading",
                     _latestSnapshot.CheckedAtLocal.ToString("h:mm:ss tt"));
                 _notifyIcon.Text = TruncateTooltip(
-                    string.Format(
-                        "Codex: {0}% left - OFFLINE - last {1}",
-                        _latestSnapshot.RemainingPercent,
-                        _latestSnapshot.CheckedAtLocal.ToString("h:mm tt")));
-                ReplaceIcon(
-                    _latestSnapshot.RemainingPercent.ToString(),
-                    GetUsageColor(_latestSnapshot.RemainingPercent),
-                    true);
+                    _latestSnapshot.IsPlus
+                        ? string.Format(
+                            "Codex Plus: 5h {0} | week {1} - OFFLINE",
+                            FormatWindowPercent(_latestSnapshot.FiveHourWindow),
+                            FormatWindowPercent(_latestSnapshot.WeeklyWindow))
+                        : string.Format(
+                            "Codex: {0}% left - OFFLINE - last {1}",
+                            _latestSnapshot.RemainingPercent,
+                            _latestSnapshot.CheckedAtLocal.ToString("h:mm tt")));
+                ReplaceSnapshotIcon(_latestSnapshot, true);
                 AppLog.Info(
                     string.Format(
                         "Showing last successful reading from {0:O}; retrying in {1} minute(s).",
@@ -241,6 +278,8 @@ namespace CodexUsageTray
                 return;
             }
 
+            _fiveHourItem.Visible = false;
+            _fiveHourResetItem.Visible = false;
             _summaryItem.Text = "Codex usage unavailable";
             _prepaidCreditsItem.Text = PrepaidCredits.Format(null);
             _resetItem.Text = FriendlyError(exception);
@@ -264,6 +303,23 @@ namespace CodexUsageTray
             if (_latestSnapshot != null)
             {
                 bool isOffline = !string.IsNullOrWhiteSpace(_lastError);
+                if (_latestSnapshot.IsPlus)
+                {
+                    ShowBalloon(
+                        isOffline ? "Codex Plus usage - offline" : "Codex Plus usage",
+                        string.Format(
+                            "{0}\\n{1}\\n{2}\\n{3}\\n{4}\\n{5}{6}",
+                            FormatFiveHourSummary(_latestSnapshot, string.Empty),
+                            FormatWindowReset("5-hour", _latestSnapshot.FiveHourWindow),
+                            FormatUsageSummary(_latestSnapshot, string.Empty),
+                            FormatWindowReset("Weekly", _latestSnapshot.WeeklyWindow),
+                            FormatResetCredits(_latestSnapshot.AvailableResetCredits),
+                            PrepaidCredits.Format(_latestSnapshot.PrepaidCredits),
+                            isOffline ? "\\nOFFLINE - last successful reading" : string.Empty),
+                        isOffline ? ToolTipIcon.Warning : ToolTipIcon.Info);
+                    return;
+                }
+
                 string resetText = _latestSnapshot.ResetAtLocal.HasValue
                     ? "Resets " + _latestSnapshot.ResetAtLocal.Value.ToString(
                         "dddd, MMMM d 'at' h:mm tt")
@@ -376,6 +432,34 @@ namespace CodexUsageTray
             }
         }
 
+        private void ReplaceSnapshotIcon(UsageSnapshot snapshot, bool showOfflineBadge)
+        {
+            if (!snapshot.IsPlus)
+            {
+                ReplaceIcon(
+                    snapshot.RemainingPercent.ToString(),
+                    GetUsageColor(snapshot.RemainingPercent),
+                    showOfflineBadge);
+                return;
+            }
+
+            UsageWindowSnapshot fiveHour = snapshot.FiveHourWindow;
+            UsageWindowSnapshot weekly = snapshot.WeeklyWindow;
+            Icon nextIcon = TrayIconRenderer.CreateDualStatusIcon(
+                fiveHour == null ? "??" : fiveHour.RemainingPercent.ToString(),
+                fiveHour == null ? Color.DimGray : GetUsageColor(fiveHour.RemainingPercent),
+                weekly == null ? "??" : weekly.RemainingPercent.ToString(),
+                weekly == null ? Color.DimGray : GetUsageColor(weekly.RemainingPercent),
+                showOfflineBadge);
+            Icon previousIcon = _currentIcon;
+            _currentIcon = nextIcon;
+            _notifyIcon.Icon = nextIcon;
+            if (previousIcon != null)
+            {
+                previousIcon.Dispose();
+            }
+        }
+
         private void SetRefreshTimerInterval(int intervalMilliseconds)
         {
             if (_disposed)
@@ -410,11 +494,36 @@ namespace CodexUsageTray
             UsageSnapshot snapshot,
             string suffix)
         {
+            if (snapshot.IsPlus)
+            {
+                return "Weekly: " + FormatWindowPercent(snapshot.WeeklyWindow) +
+                    " left" + suffix;
+            }
+
             return string.Format(
                 "Codex: {0}% {1} left{2}",
                 snapshot.RemainingPercent,
                 snapshot.IsWeekly ? "weekly" : "longest-window",
                 suffix);
+        }
+
+        private static string FormatFiveHourSummary(UsageSnapshot snapshot, string suffix)
+        {
+            return "5-hour: " + FormatWindowPercent(snapshot.FiveHourWindow) +
+                " left" + suffix;
+        }
+
+        private static string FormatWindowPercent(UsageWindowSnapshot window)
+        {
+            return window == null ? "unavailable" : window.RemainingPercent + "%";
+        }
+
+        private static string FormatWindowReset(string label, UsageWindowSnapshot window)
+        {
+            return label + " resets " +
+                (window != null && window.ResetAtLocal.HasValue
+                    ? window.ResetAtLocal.Value.ToString("ddd, MMM d 'at' h:mm tt")
+                    : "unavailable");
         }
 
         private static Color GetUsageColor(int remainingPercent)

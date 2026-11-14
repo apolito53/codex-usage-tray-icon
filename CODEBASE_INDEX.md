@@ -24,8 +24,10 @@
 
 - `src/CodexPathResolver.cs` - finds the mutable local Codex CLI installation.
 - `src/CodexUsageClient.cs` - starts `codex app-server`, performs the JSON
-  request handshake, and selects the longest/weekly Codex rate-limit window.
-- `src/UsageSnapshot.cs` - small UI-facing usage model.
+  request handshake, retains short and weekly quota windows, and optionally
+  reads account-plan information to choose the Plus-specific display.
+- `src/UsageSnapshot.cs` and `src/UsageWindowSnapshot.cs` - UI-facing usage
+  model and optional independent quota-window readings.
 - `src/ResetCreditSnapshot.cs` - read-only expiry data for one available reset
   credit; intentionally excludes opaque redemption identifiers.
 - `src/CodexNavigation.cs` - opens Codex's supported Settings deep link, uses
@@ -34,8 +36,8 @@
 
 ## Windows integration
 
-- `src/TrayIconRenderer.cs` - dynamically renders the large colored percentage
-  icon and its stale/offline badge.
+- `src/TrayIconRenderer.cs` - dynamically renders the original Pro circular
+  percent icon or a dual-color Plus pill, with stale/offline badge.
 - `src/StartupRegistration.cs` - manages the current-user Run registry value.
 - `src/AppLog.cs` - bounded local diagnostic logging without raw server
   payloads or credentials.
