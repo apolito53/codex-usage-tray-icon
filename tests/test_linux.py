@@ -23,7 +23,7 @@ def make_executable(path: Path) -> None:
 class PrepaidCreditTests(unittest.TestCase):
     def test_menu_stale_missing_and_recovery(self):
         app = object.__new__(tray.TrayApplication)
-        for name in ("summary_item", "five_hour_item", "five_hour_reset_item", "reset_item", "prepaid_credits_item", "status_item", "_replace_snapshot_icon", "_replace_icon", "_apply_reset_credit_menu"):
+        for name in ("summary_item", "five_hour_item", "five_hour_reset_item", "tray_window_menu_item", "reset_item", "prepaid_credits_item", "status_item", "_replace_snapshot_icon", "_replace_icon", "_apply_reset_credit_menu"):
             setattr(app, name, mock.Mock())
         snapshot = tray.parse_usage_response({"result": {"rateLimits": {
             "primary": {"usedPercent": 25}, "credits": {"balance": "12.50"}
@@ -44,7 +44,7 @@ class PrepaidCreditTests(unittest.TestCase):
     def test_plus_menu_and_offline_state(self):
         app = object.__new__(tray.TrayApplication)
         for name in ("summary_item", "five_hour_item", "five_hour_reset_item",
-                     "reset_item", "prepaid_credits_item", "status_item",
+                     "tray_window_menu_item", "reset_item", "prepaid_credits_item", "status_item",
                      "_replace_snapshot_icon", "_apply_reset_credit_menu"):
             setattr(app, name, mock.Mock())
         snapshot = tray.parse_usage_response({"result": {"rateLimits": {
@@ -55,6 +55,7 @@ class PrepaidCreditTests(unittest.TestCase):
         app.latest_snapshot = snapshot
         app._apply_snapshot(snapshot)
         app.five_hour_item.show.assert_called_once()
+        app.tray_window_menu_item.show.assert_called_once()
         app.five_hour_item.set_label.assert_called_with("5-hour: 75% left")
         app.summary_item.set_label.assert_called_with("Weekly: 58% left")
         app.reset_item.set_label.assert_called_with("Weekly resets unavailable")
@@ -68,6 +69,7 @@ class PrepaidCreditTests(unittest.TestCase):
         app._apply_snapshot(pro)
         app.five_hour_item.hide.assert_called()
         app.five_hour_reset_item.hide.assert_called()
+        app.tray_window_menu_item.hide.assert_called()
         app.summary_item.set_label.assert_called_with("Codex: 58% weekly left")
 
     def test_credit_states_and_bucket_selection(self):
@@ -336,22 +338,64 @@ class IconTests(unittest.TestCase):
 
 
 
-    def test_plus_pill_icon_uses_question_marks_without_touching_pro_circle(self):
+    def test_single_circle_shows_unknown_without_reusing_loading_glyph(self):
         with tempfile.TemporaryDirectory() as temporary:
             with mock.patch.dict(os.environ, {"XDG_CACHE_HOME": temporary}):
-                root, name = tray.write_dual_status_icon(
-                    "??", "#6e7781", "38", "#cf222e", True
-                )
+                root, name = tray.write_status_icon("??", "#6e7781", True)
                 contents = (root / (name + ".svg")).read_text(encoding="utf-8")
-                self.assertIn('rx="20"', contents)
                 self.assertIn(">??</text>", contents)
-                self.assertIn(">38</text>", contents)
+                self.assertIn('r="30.5"', contents)
+                self.assertNotIn('rx="20"', contents)
+                self.assertIn("unknown", name)
                 self.assertIn('circle cx="55"', contents)
-                self.assertIn("-dual-", name)
-                _, pro_name = tray.write_status_icon("38", "#cf222e", False)
-                pro_contents = (root / (pro_name + ".svg")).read_text(encoding="utf-8")
-                self.assertIn('r="30.5"', pro_contents)
-                self.assertNotIn('rx="20"', pro_contents)
+                _, loading_name = tray.write_status_icon("?", "#6e7781", True)
+                self.assertNotEqual(loading_name, name)
+
+
+class TrayWindowChoiceTests(unittest.TestCase):
+    def test_preference_persists_and_defaults_safely(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": temporary}):
+                self.assertEqual("five-hour", tray.load_tray_window())
+                tray.save_tray_window("weekly")
+                self.assertEqual("weekly", tray.load_tray_window())
+                self.assertEqual("0o600", oct(tray.tray_window_preference_path().stat().st_mode & 0o777))
+                tray.save_tray_window("five-hour")
+                self.assertEqual("five-hour", tray.load_tray_window())
+                tray.tray_window_preference_path().write_text("garbage", encoding="utf-8")
+                self.assertEqual("five-hour", tray.load_tray_window())
+
+    def test_selection_renders_one_window_immediately_and_preserves_offline(self):
+        app = object.__new__(tray.TrayApplication)
+        app._replace_icon = mock.Mock()
+        app.logger = mock.Mock()
+        app.last_error = None
+        snapshot = tray.parse_usage_response({"result": {"rateLimits": {
+            "planType": "plus",
+            "primary": {"usedPercent": 25, "windowDurationMins": 300},
+            "secondary": {"usedPercent": 42, "windowDurationMins": 10080},
+        }}})
+        app.latest_snapshot = snapshot
+        app.tray_window_choice = "five-hour"
+        with mock.patch.object(tray, "save_tray_window") as save:
+            app._replace_snapshot_icon(snapshot, False)
+            app._replace_icon.assert_called_with("75", "#2da44e", False, "Codex Plus 5-hour")
+            app.select_tray_window("weekly")
+            save.assert_called_with("weekly")
+            app._replace_icon.assert_called_with("58", "#2da44e", False, "Codex Plus weekly")
+
+            app.last_error = "offline"
+            app.select_tray_window("five-hour")
+            app._replace_icon.assert_called_with("75", "#2da44e", True, "Codex Plus 5-hour")
+
+            missing = tray.dataclasses.replace(snapshot, five_hour_remaining_percent=None)
+            app._replace_snapshot_icon(missing, True)
+            app._replace_icon.assert_called_with("??", "#6e7781", True, "Codex Plus 5-hour")
+
+            pro = tray.dataclasses.replace(snapshot, plan_type="pro")
+            app._replace_snapshot_icon(pro, False)
+            app._replace_icon.assert_called_with("58", "#2da44e", False)
+
 
 
 class DesktopIntegrationTests(unittest.TestCase):
