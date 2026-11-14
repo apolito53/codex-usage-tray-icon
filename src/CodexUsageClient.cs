@@ -55,7 +55,7 @@ namespace CodexUsageTray
                     process,
                     "{\"id\":1,\"method\":\"initialize\",\"params\":{" +
                     "\"clientInfo\":{\"name\":\"codex-usage-tray\"," +
-                    "\"title\":\"Codex Usage Tray\",\"version\":\"0.2.1.0\"}," +
+                    "\"title\":\"Codex Usage Tray\",\"version\":\"0.2.2.0\"}," +
                     "\"capabilities\":{\"experimentalApi\":true}}}");
 
                 ReadResponse(process, 1);

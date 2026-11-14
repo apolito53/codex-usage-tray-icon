@@ -2,14 +2,6 @@
 
 ## Unreleased
 
-- Plus desktop trays show a split-color capsule with the remaining five-hour
-  allowance on the left and weekly allowance on the right. Missing values show
-  `??` on the icon and `unavailable` in the menu. Both reset times appear in
-  the menu, and disconnected readings are marked stale. Pro retains its
-  original circular weekly icon and menu.
-- Added desktop build, Linux test and Windows regression checks in CI.
-
-
 - Android 0.2.1 installs alongside older previews, including previews signed
   on another machine. Both native libraries now use 16 KB ELF alignment.
 
@@ -25,6 +17,26 @@
   browsed independently; remaining balances use a fixed 0–100% scale.
 - Preserved fractional usage readings for charts, integrated helper-module
   installation, and added an independent `--purge-history` uninstall option.
+
+## v0.2.2.0 - 2026-11-14
+
+- Replaced the too-small Plus dual-number pill with the original readable
+  circular number. Plus users can switch the tray icon between five-hour and
+  weekly remaining allowance from a checked submenu; five-hour is the default.
+- The choice persists across restarts and switches the icon immediately without
+  polling Codex again. Missing selected values display `??`; offline badges,
+  both menu readings/reset times, and Pro's old icon are preserved.
+- Added selection/persistence/regression checks for Windows and Ubuntu.
+
+## v0.2.1.0 - 2026-11-14
+
+- Plus desktop trays show a split-color capsule with the remaining five-hour
+  allowance on the left and weekly allowance on the right. Missing values show
+  `??` on the icon and `unavailable` in the menu. Both reset times appear in
+  the menu, and disconnected readings are marked stale. Pro retains its
+  original circular weekly icon and menu.
+- Added desktop build, Linux test and Windows regression checks in CI.
+
 
 ## v0.2.0.0 - 2026-08-18
 
