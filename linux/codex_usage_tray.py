@@ -31,7 +31,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, TextIO, Tuple
 
 APP_ID = "codex-usage-tray"
 APP_NAME = "Codex Usage Tray"
-APP_VERSION = "0.2.0.0"
+APP_VERSION = "0.2.1.0"
 ICON_LAYOUT_VERSION = 3
 OVERRIDE_VARIABLE = "CODEX_USAGE_TRAY_CODEX_PATH"
 RESPONSE_TIMEOUT_SECONDS = 12
@@ -727,7 +727,9 @@ def write_dual_status_icon(
     right = weekly_text if re.fullmatch(r"(?:[0-9]{1,3}|\?\?)", weekly_text) else "??"
     state = "offline" if offline else "online"
     icon_name = "codex-usage-v4-dual-{}-{}-{}-{}-{}".format(
-        left, right, short_color.lstrip("#"), weekly_color.lstrip("#"), state
+        left if left != "??" else "unknown",
+        right if right != "??" else "unknown",
+        short_color.lstrip("#"), weekly_color.lstrip("#"), state
     )
     icon_path = icon_root / (icon_name + ".svg")
     if not icon_path.exists():
