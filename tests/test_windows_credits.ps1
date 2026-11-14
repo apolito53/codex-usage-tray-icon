@@ -60,12 +60,13 @@ $preference = $assembly.GetType('CodexUsageTray.TrayWindowPreference')
 $load = $preference.GetMethod('LoadFromPath', $flags)
 $save = $preference.GetMethod('SaveToPath', $flags)
 $testPath = Join-Path ([IO.Path]::GetTempPath()) ('codextray-' + [Guid]::NewGuid().ToString('N') + '.txt')
+$pathArg = $testPath.PSObject.BaseObject
 try {
-    if ($load.Invoke($null, @($testPath)) -ne 'five-hour') { throw 'Default tray preference must be 5-hour' }
-    $save.Invoke($null, @($testPath, 'weekly'))
-    if ($load.Invoke($null, @($testPath)) -ne 'weekly') { throw 'Weekly tray selection did not persist' }
-    $save.Invoke($null, @($testPath, 'invalid'))
-    if ($load.Invoke($null, @($testPath)) -ne 'five-hour') { throw 'Invalid preference must fall back to 5-hour' }
+    if ($load.Invoke($null, [object[]]@($pathArg)) -ne 'five-hour') { throw 'Default tray preference must be 5-hour' }
+    $save.Invoke($null, [object[]]@($pathArg, [string]'weekly'))
+    if ($load.Invoke($null, [object[]]@($pathArg)) -ne 'weekly') { throw 'Weekly tray selection did not persist' }
+    $save.Invoke($null, [object[]]@($pathArg, [string]'invalid'))
+    if ($load.Invoke($null, [object[]]@($pathArg)) -ne 'five-hour') { throw 'Invalid preference must fall back to 5-hour' }
 } finally {
     Remove-Item -LiteralPath $testPath -ErrorAction SilentlyContinue
 }
