@@ -1,0 +1,33 @@
+name: Desktop tray checks
+
+on:
+  push:
+    branches:
+      - main
+      - 'feat/plus-dual-window-tray-pill-*'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'linux/**'
+      - 'tests/**'
+      - 'build.ps1'
+      - '.github/workflows/desktop-tray.yml'
+
+jobs:
+  ubuntu-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python tray tests
+        run: python3 -m unittest discover -s tests -v
+
+  windows-tests:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build .NET Framework tray
+        shell: powershell
+        run: .\build.ps1
+      - name: Exercise Windows usage parsing and tray menu
+        shell: powershell
+        run: .\tests\test_windows_credits.ps1
