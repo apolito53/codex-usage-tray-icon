@@ -1,9 +1,10 @@
 # Codex Usage Tray
 
 Codex Usage Tray shows Codex quota allowances beside the clock on Windows and
-Ubuntu. Plus accounts show a split pill with five-hour remaining on the left and
-weekly remaining on the right; Pro accounts retain their original circular weekly
-icon. The Android version still puts the weekly number in your status bar.
+Ubuntu. Plus accounts can choose which allowance the full-sized circular icon
+displays: **5-hour** or **weekly**, with 5-hour as the default. The selection
+is saved and persists across launches. Pro accounts keep their original
+weekly icon. The Android app still puts the weekly number in your status bar.
 
 The Android app is **Allowance Meter** (called **Codex Usage Meter** in the
 0.2.1 sideload). Tap **Sign in with ChatGPT**, approve the code in your browser,
@@ -12,16 +13,15 @@ account. The phone checks its own account session directly.
 [Android installation and builds](android/README.md) ·
 [Privacy policy](https://apolito53.github.io/codex-usage-tray-icon/privacy/)
 
-The desktop tray displays the percentage remaining in each reported quota window.
-Plus uses a green/amber/red half-pill for each of its independent five-hour and
-weekly allowances. Missing windows display `??` in the icon and `unavailable`
-in the menu, without inventing zero or a reset time. Pro keeps the original
-circular weekly number, color thresholds and menu. System tray slots are
-square, so the Plus capsule is drawn within that square and may be very small
-on some taskbars. On
-Windows, hover for a quick summary, left-click for reset details, or
-right-click for controls. Ubuntu's AppIndicator opens the same details and
-controls from its normal tray menu.
+The desktop tray icon shows a single, legible percentage with the original
+green/amber/red color thresholds. On Plus, the **Tray icon shows** submenu
+switches immediately between **5-hour allowance** and **Weekly allowance**.
+Both values and their reset times remain available in the menu regardless of
+which icon is selected. If a selected allowance is not reported by Codex, the
+icon shows `??` and the menu says `unavailable`, never an invented zero or
+reset. Pro preserves its old icon and menu. Windows supports hover summaries,
+left-click details, and right-click controls; Ubuntu's AppIndicator exposes
+those details and the switch in its regular tray menu.
 
 **Prepaid credits** appears in the Windows left-click summary and right-click
 menu, and in Ubuntu's tray menu and `--check` output. It shows the credit
