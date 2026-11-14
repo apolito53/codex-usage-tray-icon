@@ -43,12 +43,14 @@ $plus = $parser.Invoke($null, @($plusResponse))
 $instanceFlags = [Reflection.BindingFlags]'Instance,NonPublic'
 $five = $plus.GetType().GetProperty('FiveHourWindow', $instanceFlags).GetValue($plus, $null)
 $week = $plus.GetType().GetProperty('WeeklyWindow', $instanceFlags).GetValue($plus, $null)
-if ($five.RemainingPercent -ne 75 -or $week.RemainingPercent -ne 58) { throw 'Plus dual quota parsing failed' }
-if (-not $plus.IsPlus) { throw 'Plus plan detection failed' }
+$fiveRemaining = $five.GetType().GetProperty('RemainingPercent', $instanceFlags).GetValue($five, $null)
+$weekRemaining = $week.GetType().GetProperty('RemainingPercent', $instanceFlags).GetValue($week, $null)
+if ($fiveRemaining -ne 75 -or $weekRemaining -ne 58) { throw "Plus dual quota parsing failed: $fiveRemaining / $weekRemaining" }
+if (-not $plus.GetType().GetProperty('IsPlus', $instanceFlags).GetValue($plus, $null)) { throw 'Plus plan detection failed' }
 
 $missingResponse = $serializer.DeserializeObject('{"result":{"rateLimits":{"planType":"plus","primary":{"usedPercent":42,"windowDurationMins":10080}}}}')
 $missing = $parser.Invoke($null, @($missingResponse))
-if ($missing.FiveHourWindow) { throw 'Missing five-hour quota treated as a value' }
+if ($missing.GetType().GetProperty('FiveHourWindow', $instanceFlags).GetValue($missing, $null)) { throw 'Missing five-hour quota treated as a value' }
 $renderer = $assembly.GetType('CodexUsageTray.TrayIconRenderer')
 $dual = $renderer.GetMethod('CreateDualStatusIcon', $flags)
 $unknown = $dual.Invoke($null, @('??', [Drawing.Color]::DimGray, '58', [Drawing.Color]::Green, $false))
