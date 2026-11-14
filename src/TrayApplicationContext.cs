@@ -18,6 +18,9 @@ namespace CodexUsageTray
         private readonly ToolStripMenuItem _summaryItem;
         private readonly ToolStripMenuItem _fiveHourItem;
         private readonly ToolStripMenuItem _fiveHourResetItem;
+        private readonly ToolStripMenuItem _trayWindowMenuItem;
+        private readonly ToolStripMenuItem _trayFiveHourChoiceItem;
+        private readonly ToolStripMenuItem _trayWeeklyChoiceItem;
         private readonly ToolStripMenuItem _resetItem;
         private readonly ToolStripMenuItem _resetCreditsItem;
         private readonly ToolStripMenuItem _prepaidCreditsItem;
@@ -25,6 +28,7 @@ namespace CodexUsageTray
         private readonly ToolStripMenuItem _refreshItem;
         private readonly ToolStripMenuItem _startupItem;
 
+        private string _trayWindowChoice;
         private UsageSnapshot _latestSnapshot;
         private Icon _currentIcon;
         private bool _refreshInProgress;
@@ -36,6 +40,7 @@ namespace CodexUsageTray
         internal TrayApplicationContext()
         {
             _usageClient = new CodexUsageClient();
+            _trayWindowChoice = TrayWindowPreference.Load();
 
             _summaryItem = new ToolStripMenuItem("Codex usage: loading…")
             {
@@ -67,6 +72,15 @@ namespace CodexUsageTray
             _refreshItem = new ToolStripMenuItem("Refresh now");
             _startupItem = new ToolStripMenuItem("Start with Windows");
 
+            _trayWindowMenuItem = new ToolStripMenuItem("Tray icon shows") { Visible = false };
+            _trayFiveHourChoiceItem = new ToolStripMenuItem("5-hour allowance");
+            _trayWeeklyChoiceItem = new ToolStripMenuItem("Weekly allowance");
+            _trayWindowMenuItem.DropDownItems.Add(_trayFiveHourChoiceItem);
+            _trayWindowMenuItem.DropDownItems.Add(_trayWeeklyChoiceItem);
+            _trayFiveHourChoiceItem.Click += delegate { SelectTrayWindow(TrayWindowPreference.FiveHour); };
+            _trayWeeklyChoiceItem.Click += delegate { SelectTrayWindow(TrayWindowPreference.Weekly); };
+            UpdateTrayWindowChoiceMenu();
+
             _refreshItem.Click += delegate { RefreshUsageAsync(); };
             _startupItem.Click += ToggleStartup;
 
@@ -85,6 +99,7 @@ namespace CodexUsageTray
             menu.Items.Add(_prepaidCreditsItem);
             menu.Items.Add(_statusItem);
             menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add(_trayWindowMenuItem);
             menu.Items.Add(_refreshItem);
             menu.Items.Add(_startupItem);
             menu.Items.Add(openLogsItem);
@@ -198,6 +213,8 @@ namespace CodexUsageTray
         {
             _fiveHourItem.Visible = snapshot.IsPlus;
             _fiveHourResetItem.Visible = snapshot.IsPlus;
+            _trayWindowMenuItem.Visible = snapshot.IsPlus;
+            UpdateTrayWindowChoiceMenu();
             if (snapshot.IsPlus)
             {
                 _fiveHourItem.Text = FormatFiveHourSummary(snapshot, string.Empty);
@@ -280,6 +297,7 @@ namespace CodexUsageTray
 
             _fiveHourItem.Visible = false;
             _fiveHourResetItem.Visible = false;
+            _trayWindowMenuItem.Visible = false;
             _summaryItem.Text = "Codex usage unavailable";
             _prepaidCreditsItem.Text = PrepaidCredits.Format(null);
             _resetItem.Text = FriendlyError(exception);
@@ -434,6 +452,7 @@ namespace CodexUsageTray
 
         private void ReplaceSnapshotIcon(UsageSnapshot snapshot, bool showOfflineBadge)
         {
+            // Pro always keeps the original long-window icon.
             if (!snapshot.IsPlus)
             {
                 ReplaceIcon(
@@ -443,20 +462,46 @@ namespace CodexUsageTray
                 return;
             }
 
-            UsageWindowSnapshot fiveHour = snapshot.FiveHourWindow;
-            UsageWindowSnapshot weekly = snapshot.WeeklyWindow;
-            Icon nextIcon = TrayIconRenderer.CreateDualStatusIcon(
-                fiveHour == null ? "??" : fiveHour.RemainingPercent.ToString(),
-                fiveHour == null ? Color.DimGray : GetUsageColor(fiveHour.RemainingPercent),
-                weekly == null ? "??" : weekly.RemainingPercent.ToString(),
-                weekly == null ? Color.DimGray : GetUsageColor(weekly.RemainingPercent),
+            UsageWindowSnapshot selected = GetSelectedTrayWindow(snapshot);
+            ReplaceIcon(
+                selected == null ? "??" : selected.RemainingPercent.ToString(),
+                selected == null ? Color.DimGray : GetUsageColor(selected.RemainingPercent),
                 showOfflineBadge);
-            Icon previousIcon = _currentIcon;
-            _currentIcon = nextIcon;
-            _notifyIcon.Icon = nextIcon;
-            if (previousIcon != null)
+        }
+
+        private UsageWindowSnapshot GetSelectedTrayWindow(UsageSnapshot snapshot)
+        {
+            return string.Equals(_trayWindowChoice, TrayWindowPreference.Weekly,
+                StringComparison.OrdinalIgnoreCase)
+                ? snapshot.WeeklyWindow
+                : snapshot.FiveHourWindow;
+        }
+
+        private void UpdateTrayWindowChoiceMenu()
+        {
+            _trayFiveHourChoiceItem.Checked =
+                !string.Equals(_trayWindowChoice, TrayWindowPreference.Weekly,
+                    StringComparison.OrdinalIgnoreCase);
+            _trayWeeklyChoiceItem.Checked = !_trayFiveHourChoiceItem.Checked;
+        }
+
+        private void SelectTrayWindow(string choice)
+        {
+            _trayWindowChoice = TrayWindowPreference.Normalize(choice);
+            UpdateTrayWindowChoiceMenu();
+            try
             {
-                previousIcon.Dispose();
+                TrayWindowPreference.Save(_trayWindowChoice);
+            }
+            catch (Exception exception)
+            {
+                AppLog.Error("Could not save tray window preference.", exception);
+            }
+
+            if (_latestSnapshot != null && _latestSnapshot.IsPlus)
+            {
+                // Switch immediately, without waiting for the next API poll.
+                ReplaceSnapshotIcon(_latestSnapshot, !string.IsNullOrWhiteSpace(_lastError));
             }
         }
 
