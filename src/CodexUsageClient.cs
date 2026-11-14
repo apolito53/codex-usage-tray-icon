@@ -270,6 +270,7 @@ namespace CodexUsageTray
             object usedValue;
             int usedPercent;
             if (!window.TryGetValue("usedPercent", out usedValue) ||
+                usedValue == null || usedValue is bool ||
                 !TryConvertInt(usedValue, out usedPercent))
             {
                 return null;
