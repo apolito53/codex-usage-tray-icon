@@ -36,8 +36,10 @@
 
 ## Windows integration
 
-- `src/TrayIconRenderer.cs` - dynamically renders the original Pro circular
-  percent icon or a dual-color Plus pill, with stale/offline badge.
+- `src/TrayIconRenderer.cs` - renders the readable circular percent icon for
+  Pro and the selected five-hour/weekly Plus allowance, with offline badge.
+- `src/TrayWindowPreference.cs` - persists only the Windows icon-window choice
+  in the user's LocalAppData directory; Ubuntu uses an XDG config file.
 - `src/StartupRegistration.cs` - manages the current-user Run registry value.
 - `src/AppLog.cs` - bounded local diagnostic logging without raw server
   payloads or credentials.
