@@ -1,7 +1,9 @@
 # Codex Usage Tray
 
-Codex Usage Tray shows your remaining weekly Codex allowance beside the clock
-on Windows and Ubuntu. The Android version puts the number in your status bar.
+Codex Usage Tray shows Codex quota allowances beside the clock on Windows and
+Ubuntu. Plus accounts show a split pill with five-hour remaining on the left and
+weekly remaining on the right; Pro accounts retain their original circular weekly
+icon. The Android version still puts the weekly number in your status bar.
 
 The Android app is **Allowance Meter** (called **Codex Usage Meter** in the
 0.2.1 sideload). Tap **Sign in with ChatGPT**, approve the code in your browser,
@@ -10,8 +12,13 @@ account. The phone checks its own account session directly.
 [Android installation and builds](android/README.md) ·
 [Privacy policy](https://apolito53.github.io/codex-usage-tray-icon/privacy/)
 
-The tray icon shows the percentage of the weekly Codex allowance remaining.
-Its color shifts from green to amber to red as the allowance gets low. On
+The desktop tray displays the percentage remaining in each reported quota window.
+Plus uses a green/amber/red half-pill for each of its independent five-hour and
+weekly allowances. Missing windows display `??` in the icon and `unavailable`
+in the menu, without inventing zero or a reset time. Pro keeps the original
+circular weekly number, color thresholds and menu. System tray slots are
+square, so the Plus capsule is drawn within that square and may be very small
+on some taskbars. On
 Windows, hover for a quick summary, left-click for reset details, or
 right-click for controls. Ubuntu's AppIndicator opens the same details and
 controls from its normal tray menu.
