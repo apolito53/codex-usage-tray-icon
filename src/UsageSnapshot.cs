@@ -17,7 +17,10 @@ namespace CodexUsageTray
             string limitId,
             string limitName,
             DateTime checkedAtLocal,
-            PrepaidCredits prepaidCredits = null)
+            PrepaidCredits prepaidCredits = null,
+            UsageWindowSnapshot fiveHourWindow = null,
+            UsageWindowSnapshot weeklyWindow = null,
+            string planType = null)
         {
             UsedPercent = usedPercent;
             RemainingPercent = remainingPercent;
@@ -32,6 +35,28 @@ namespace CodexUsageTray
             LimitName = limitName;
             CheckedAtLocal = checkedAtLocal;
             PrepaidCredits = prepaidCredits;
+            FiveHourWindow = fiveHourWindow;
+            WeeklyWindow = weeklyWindow;
+            PlanType = planType;
+        }
+
+        // Short and weekly windows are independent of the longest-window
+        // fields, which remain unchanged for Pro accounts and history.
+        internal UsageWindowSnapshot FiveHourWindow { get; private set; }
+        internal UsageWindowSnapshot WeeklyWindow { get; private set; }
+        internal string PlanType { get; private set; }
+
+        internal bool IsPlus
+        {
+            get { return string.Equals(PlanType, "plus", StringComparison.OrdinalIgnoreCase); }
+        }
+
+        internal void SetPlanType(string planType)
+        {
+            if (!string.IsNullOrWhiteSpace(planType))
+            {
+                PlanType = planType.Trim();
+            }
         }
 
         internal int UsedPercent { get; private set; }
