@@ -65,7 +65,27 @@ namespace CodexUsageTray
                     "{\"id\":2,\"method\":\"account/rateLimits/read\",\"params\":{}}");
 
                 Dictionary<string, object> response = ReadResponse(process, 2);
-                return ParseUsageResponse(response);
+                UsageSnapshot snapshot = ParseUsageResponse(response);
+
+                // Newer servers may include the plan on the quota bucket.
+                // If not, ask the read-only account endpoint. Plan detection
+                // is optional: an older CLI must not break weekly monitoring.
+                if (string.IsNullOrWhiteSpace(snapshot.PlanType))
+                {
+                    try
+                    {
+                        WriteRequest(
+                            process,
+                            "{\\\"id\\\":3,\\\"method\\\":\\\"account/read\\\",\\\"params\\\":{\\\"refreshToken\\\":false}}");
+                        snapshot.SetPlanType(ReadAccountPlan(ReadResponse(process, 3)));
+                    }
+                    catch (Exception)
+                    {
+                        AppLog.Info("Codex plan could not be read; using the legacy icon.");
+                    }
+                }
+
+                return snapshot;
             }
             catch (Exception exception)
             {
@@ -212,6 +232,20 @@ namespace CodexUsageTray
             IList<ResetCreditSnapshot> resetCredits = ReadResetCreditDetails(result);
             object prepaidCredits;
             bucket.TryGetValue("credits", out prepaidCredits);
+            UsageWindowSnapshot fiveHourWindow = null;
+            UsageWindowSnapshot weeklyWindow = null;
+            foreach (Dictionary<string, object> candidate in windows)
+            {
+                long duration = ReadLong(candidate, "windowDurationMins", 0);
+                if (duration == 300)
+                {
+                    fiveHourWindow = TryReadWindow(candidate);
+                }
+                if (duration >= (7 * 24 * 60) - 60)
+                {
+                    weeklyWindow = TryReadWindow(candidate);
+                }
+            }
 
             return new UsageSnapshot(
                 usedPercent,
@@ -224,7 +258,48 @@ namespace CodexUsageTray
                 limitId,
                 limitName,
                 DateTime.Now,
-                PrepaidCredits.Parse(prepaidCredits));
+                PrepaidCredits.Parse(prepaidCredits),
+                fiveHourWindow,
+                weeklyWindow,
+                ReadOptionalString(bucket, "planType"));
+        }
+
+        private static UsageWindowSnapshot TryReadWindow(
+            Dictionary<string, object> window)
+        {
+            object usedValue;
+            int usedPercent;
+            if (!window.TryGetValue("usedPercent", out usedValue) ||
+                !TryConvertInt(usedValue, out usedPercent))
+            {
+                return null;
+            }
+
+            long resetAt = ReadLong(window, "resetsAt", 0);
+            return new UsageWindowSnapshot(
+                usedPercent,
+                resetAt > 0 ? (DateTime?)UnixSecondsToLocalTime(resetAt) : null,
+                ReadLong(window, "windowDurationMins", 0));
+        }
+
+        private static string ReadAccountPlan(Dictionary<string, object> response)
+        {
+            object resultValue;
+            object accountValue;
+            var result = response.TryGetValue("result", out resultValue)
+                ? resultValue as Dictionary<string, object>
+                : null;
+            var account = result != null && result.TryGetValue("account", out accountValue)
+                ? accountValue as Dictionary<string, object>
+                : null;
+            if (account == null ||
+                !string.Equals(ReadOptionalString(account, "type"), "chatgpt",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            return ReadOptionalString(account, "planType");
         }
 
         private static int? ReadAvailableResetCredits(
