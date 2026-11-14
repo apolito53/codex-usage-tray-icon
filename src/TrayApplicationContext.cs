@@ -249,18 +249,27 @@ namespace CodexUsageTray
                 _summaryItem.Text = FormatUsageSummary(
                     _latestSnapshot,
                     " - STALE");
+                if (_latestSnapshot.IsPlus)
+                {
+                    _fiveHourItem.Text = FormatFiveHourSummary(
+                        _latestSnapshot, " - STALE");
+                    _fiveHourResetItem.Text = FormatWindowReset(
+                        "5-hour", _latestSnapshot.FiveHourWindow) + " - STALE";
+                }
                 _statusItem.Text = string.Format(
                     "OFFLINE - showing {0} reading",
                     _latestSnapshot.CheckedAtLocal.ToString("h:mm:ss tt"));
                 _notifyIcon.Text = TruncateTooltip(
-                    string.Format(
-                        "Codex: {0}% left - OFFLINE - last {1}",
-                        _latestSnapshot.RemainingPercent,
-                        _latestSnapshot.CheckedAtLocal.ToString("h:mm tt")));
-                ReplaceIcon(
-                    _latestSnapshot.RemainingPercent.ToString(),
-                    GetUsageColor(_latestSnapshot.RemainingPercent),
-                    true);
+                    _latestSnapshot.IsPlus
+                        ? string.Format(
+                            "Codex Plus: 5h {0} | week {1} - OFFLINE",
+                            FormatWindowPercent(_latestSnapshot.FiveHourWindow),
+                            FormatWindowPercent(_latestSnapshot.WeeklyWindow))
+                        : string.Format(
+                            "Codex: {0}% left - OFFLINE - last {1}",
+                            _latestSnapshot.RemainingPercent,
+                            _latestSnapshot.CheckedAtLocal.ToString("h:mm tt")));
+                ReplaceSnapshotIcon(_latestSnapshot, true);
                 AppLog.Info(
                     string.Format(
                         "Showing last successful reading from {0:O}; retrying in {1} minute(s).",
@@ -269,6 +278,8 @@ namespace CodexUsageTray
                 return;
             }
 
+            _fiveHourItem.Visible = false;
+            _fiveHourResetItem.Visible = false;
             _summaryItem.Text = "Codex usage unavailable";
             _prepaidCreditsItem.Text = PrepaidCredits.Format(null);
             _resetItem.Text = FriendlyError(exception);
@@ -292,6 +303,23 @@ namespace CodexUsageTray
             if (_latestSnapshot != null)
             {
                 bool isOffline = !string.IsNullOrWhiteSpace(_lastError);
+                if (_latestSnapshot.IsPlus)
+                {
+                    ShowBalloon(
+                        isOffline ? "Codex Plus usage - offline" : "Codex Plus usage",
+                        string.Format(
+                            "{0}\\n{1}\\n{2}\\n{3}\\n{4}\\n{5}{6}",
+                            FormatFiveHourSummary(_latestSnapshot, string.Empty),
+                            FormatWindowReset("5-hour", _latestSnapshot.FiveHourWindow),
+                            FormatUsageSummary(_latestSnapshot, string.Empty),
+                            FormatWindowReset("Weekly", _latestSnapshot.WeeklyWindow),
+                            FormatResetCredits(_latestSnapshot.AvailableResetCredits),
+                            PrepaidCredits.Format(_latestSnapshot.PrepaidCredits),
+                            isOffline ? "\\nOFFLINE - last successful reading" : string.Empty),
+                        isOffline ? ToolTipIcon.Warning : ToolTipIcon.Info);
+                    return;
+                }
+
                 string resetText = _latestSnapshot.ResetAtLocal.HasValue
                     ? "Resets " + _latestSnapshot.ResetAtLocal.Value.ToString(
                         "dddd, MMMM d 'at' h:mm tt")
