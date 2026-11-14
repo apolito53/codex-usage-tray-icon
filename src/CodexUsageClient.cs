@@ -76,7 +76,7 @@ namespace CodexUsageTray
                     {
                         WriteRequest(
                             process,
-                            "{\\\"id\\\":3,\\\"method\\\":\\\"account/read\\\",\\\"params\\\":{\\\"refreshToken\\\":false}}");
+                            "{\"id\":3,\"method\":\"account/read\",\"params\":{\"refreshToken\":false}}");
                         snapshot.SetPlanType(ReadAccountPlan(ReadResponse(process, 3)));
                     }
                     catch (Exception)
