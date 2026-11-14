@@ -111,6 +111,30 @@ def autostart_path() -> Path:
     return _xdg_path("XDG_CONFIG_HOME", Path.home() / ".config") / "autostart" / (APP_ID + ".desktop")
 
 
+def tray_window_preference_path() -> Path:
+    return _xdg_path("XDG_CONFIG_HOME", Path.home() / ".config") / APP_ID / "tray-window.txt"
+
+
+def normalize_tray_window(value: Optional[str]) -> str:
+    return "weekly" if isinstance(value, str) and value.strip().lower() == "weekly" else "five-hour"
+
+
+def load_tray_window() -> str:
+    try:
+        return normalize_tray_window(tray_window_preference_path().read_text(encoding="utf-8"))
+    except (OSError, UnicodeError):
+        return "five-hour"
+
+
+def save_tray_window(value: str) -> None:
+    path = tray_window_preference_path()
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    temporary = path.with_suffix(".txt.tmp")
+    temporary.write_text(normalize_tray_window(value), encoding="utf-8")
+    temporary.chmod(0o600)
+    temporary.replace(path)
+
+
 def _usable_executable(path: Path) -> bool:
     return path.is_file() and os.access(str(path), os.X_OK)
 
@@ -672,7 +696,9 @@ class SingleInstanceLock:
 def write_status_icon(text: str, color: str, offline: bool) -> Tuple[Path, str]:
     icon_root = cache_directory() / "icons"
     icon_root.mkdir(parents=True, exist_ok=True)
-    safe_text = "".join(character for character in text if character.isalnum()) or "status"
+    safe_text = "".join(character for character in text if character.isalnum()) or (
+        "unknown" if text == "??" else "status"
+    )
     state = "offline" if offline else "online"
     icon_name = "codex-usage-v{}-{}-{}-{}".format(
         ICON_LAYOUT_VERSION,
@@ -711,59 +737,6 @@ def write_status_icon(text: str, color: str, offline: bool) -> Tuple[Path, str]:
         temporary.replace(icon_path)
     return icon_root, icon_name
 
-
-
-def write_dual_status_icon(
-    short_text: str,
-    short_color: str,
-    weekly_text: str,
-    weekly_color: str,
-    offline: bool,
-) -> Tuple[Path, str]:
-    """Plus-only capsule, constrained to the square AppIndicator icon slot."""
-    icon_root = cache_directory() / "icons"
-    icon_root.mkdir(parents=True, exist_ok=True)
-    left = short_text if re.fullmatch(r"(?:[0-9]{1,3}|\?\?)", short_text) else "??"
-    right = weekly_text if re.fullmatch(r"(?:[0-9]{1,3}|\?\?)", weekly_text) else "??"
-    state = "offline" if offline else "online"
-    icon_name = "codex-usage-v4-dual-{}-{}-{}-{}-{}".format(
-        left if left != "??" else "unknown",
-        right if right != "??" else "unknown",
-        short_color.lstrip("#"), weekly_color.lstrip("#"), state
-    )
-    icon_path = icon_root / (icon_name + ".svg")
-    if not icon_path.exists():
-        badge = (
-            '<circle cx="55" cy="8" r="7" fill="#cf222e" '
-            'stroke="#ffffff" stroke-width="2.5"/>'
-            if offline else ""
-        )
-        svg = """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <defs><clipPath id="pill"><rect x="1" y="12" width="62" height="40" rx="20"/></clipPath></defs>
-  <rect x="1" y="14" width="62" height="40" rx="20" fill="#000000" fill-opacity="0.35"/>
-  <g clip-path="url(#pill)">
-    <rect x="1" y="12" width="63" height="40" fill="{short_color}"/>
-    <rect x="32" y="12" width="32" height="40" fill="{weekly_color}"/>
-  </g>
-  <rect x="1" y="12" width="62" height="40" rx="20" fill="none" stroke="#ffffff" stroke-opacity="0.86" stroke-width="1.8"/>
-  <line x1="32" y1="16" x2="32" y2="48" stroke="#ffffff" stroke-opacity="0.55"/>
-  <text x="16" y="38" fill="#ffffff" font-family="DejaVu Sans, sans-serif" font-size="{left_size}" font-weight="bold" text-anchor="middle">{left}</text>
-  <text x="48" y="38" fill="#ffffff" font-family="DejaVu Sans, sans-serif" font-size="{right_size}" font-weight="bold" text-anchor="middle">{right}</text>
-  {badge}
-</svg>
-""".format(
-            short_color=short_color,
-            weekly_color=weekly_color,
-            left_size=17 if len(left) == 3 else 21,
-            right_size=17 if len(right) == 3 else 21,
-            left=html.escape(left),
-            right=html.escape(right),
-            badge=badge,
-        )
-        temporary = icon_path.with_suffix(".svg.tmp")
-        temporary.write_text(svg, encoding="utf-8")
-        temporary.replace(icon_path)
-    return icon_root, icon_name
 
 
 def _load_indicator_dependencies():
@@ -806,6 +779,7 @@ class TrayApplication:
         self.timer_source: Optional[int] = None
         self.exiting = False
         self.changing_startup = False
+        self.tray_window_choice = load_tray_window()
 
         icon_root, icon_name = write_status_icon("?", "#6e7781", False)
         self.indicator = self.AppIndicator.Indicator.new(
@@ -839,6 +813,27 @@ class TrayApplication:
             self.menu.append(item)
         self.menu.append(self.Gtk.SeparatorMenuItem())
 
+        self.tray_window_menu_item = self.Gtk.MenuItem(label="Tray icon shows")
+        tray_window_submenu = self.Gtk.Menu()
+        self.tray_five_hour_choice_item = self.Gtk.RadioMenuItem.new_with_label(
+            None, "5-hour allowance"
+        )
+        self.tray_weekly_choice_item = self.Gtk.RadioMenuItem.new_with_label_from_widget(
+            self.tray_five_hour_choice_item, "Weekly allowance"
+        )
+        self.tray_five_hour_choice_item.set_active(self.tray_window_choice != "weekly")
+        self.tray_weekly_choice_item.set_active(self.tray_window_choice == "weekly")
+        self.tray_five_hour_choice_item.connect(
+            "toggled", self._on_tray_window_selected, "five-hour"
+        )
+        self.tray_weekly_choice_item.connect(
+            "toggled", self._on_tray_window_selected, "weekly"
+        )
+        tray_window_submenu.append(self.tray_five_hour_choice_item)
+        tray_window_submenu.append(self.tray_weekly_choice_item)
+        self.tray_window_menu_item.set_submenu(tray_window_submenu)
+        self.menu.append(self.tray_window_menu_item)
+
         graphs_item = self.Gtk.MenuItem(label="Usage graphs…")
         graphs_item.connect("activate", self.open_graphs)
         self.menu.append(graphs_item)
@@ -864,6 +859,7 @@ class TrayApplication:
         self.menu.show_all()
         self.five_hour_item.hide()
         self.five_hour_reset_item.hide()
+        self.tray_window_menu_item.hide()
         self.indicator.set_menu(self.menu)
         self._schedule_refresh(0.25)
 
@@ -984,9 +980,11 @@ class TrayApplication:
             )
             self.five_hour_item.show()
             self.five_hour_reset_item.show()
+            self.tray_window_menu_item.show()
         else:
             self.five_hour_item.hide()
             self.five_hour_reset_item.hide()
+            self.tray_window_menu_item.hide()
 
         self.summary_item.set_label(self._format_summary(snapshot, ""))
         self.reset_item.set_label(
@@ -1026,6 +1024,7 @@ class TrayApplication:
 
         self.five_hour_item.hide()
         self.five_hour_reset_item.hide()
+        self.tray_window_menu_item.hide()
         self.summary_item.set_label("Codex usage unavailable")
         self.prepaid_credits_item.set_label(format_prepaid_credits(None))
         message = str(exception)
@@ -1074,10 +1073,14 @@ class TrayApplication:
             self.reset_credits_item.set_submenu(None)
             existing.destroy()
 
-    def _replace_icon(self, text: str, color: str, offline: bool) -> None:
+    def _replace_icon(
+        self, text: str, color: str, offline: bool, description_prefix: str = "Codex usage"
+    ) -> None:
         icon_root, icon_name = write_status_icon(text, color, offline)
         self.indicator.set_icon_theme_path(str(icon_root))
-        description = "Codex usage " + text + (" percent remaining" if text.isdigit() else "")
+        description = description_prefix + " " + text + (
+            " percent remaining" if text.isdigit() else " unavailable"
+        )
         if offline:
             description += ", offline"
         self.indicator.set_icon_full(icon_name, description)
@@ -1090,24 +1093,35 @@ class TrayApplication:
                 offline,
             )
             return
-        five = snapshot.five_hour_remaining_percent
-        week = snapshot.weekly_remaining_percent
-        icon_root, icon_name = write_dual_status_icon(
-            str(five) if five is not None else "??",
-            self._usage_color(five) if five is not None else "#6e7781",
-            str(week) if week is not None else "??",
-            self._usage_color(week) if week is not None else "#6e7781",
+
+        choice = getattr(self, "tray_window_choice", "five-hour")
+        if choice == "weekly":
+            remaining = snapshot.weekly_remaining_percent
+            description_prefix = "Codex Plus weekly"
+        else:
+            remaining = snapshot.five_hour_remaining_percent
+            description_prefix = "Codex Plus 5-hour"
+        self._replace_icon(
+            str(remaining) if remaining is not None else "??",
+            self._usage_color(remaining) if remaining is not None else "#6e7781",
             offline,
+            description_prefix,
         )
-        self.indicator.set_icon_theme_path(str(icon_root))
-        self.indicator.set_icon_full(
-            icon_name,
-            "Codex Plus: 5-hour {}, weekly {}{}".format(
-                self._window_percent(five),
-                self._window_percent(week),
-                ", offline" if offline else "",
-            ),
-        )
+
+    def _on_tray_window_selected(self, item, choice: str) -> None:
+        # Radio peers fire their toggled handlers when switching; only the
+        # newly active item should persist or redraw the icon.
+        if item.get_active():
+            self.select_tray_window(choice)
+
+    def select_tray_window(self, choice: str) -> None:
+        self.tray_window_choice = normalize_tray_window(choice)
+        try:
+            save_tray_window(self.tray_window_choice)
+        except OSError as exception:
+            self.logger.warning("Could not save tray window preference: %s", exception)
+        if self.latest_snapshot is not None and self.latest_snapshot.is_plus:
+            self._replace_snapshot_icon(self.latest_snapshot, bool(self.last_error))
 
     def _schedule_refresh(self, delay_seconds: float) -> None:
         if self.timer_source is not None:
