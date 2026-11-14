@@ -59,6 +59,15 @@ class UsageSnapshot:
     measured_used_percent: Optional[float] = None
     prepaid_balance: Optional[str] = None
     prepaid_unlimited: bool = False
+    five_hour_remaining_percent: Optional[int] = None
+    five_hour_reset_at_local: Optional[dt.datetime] = None
+    weekly_remaining_percent: Optional[int] = None
+    weekly_reset_at_local: Optional[dt.datetime] = None
+    plan_type: Optional[str] = None
+
+    @property
+    def is_plus(self) -> bool:
+        return isinstance(self.plan_type, str) and self.plan_type.lower() == "plus"
 
 
 def parse_prepaid_credits(value: Any) -> Tuple[Optional[str], bool]:
@@ -243,6 +252,29 @@ def _local_time(unix_seconds: Any) -> Optional[dt.datetime]:
         return None
 
 
+
+def _optional_window_remaining(window: Mapping[str, Any]) -> Optional[int]:
+    used = window.get("usedPercent")
+    if used is None or isinstance(used, bool):
+        return None
+    try:
+        value = float(used)
+        if not math.isfinite(value):
+            return None
+        return 100 - int(max(0.0, min(100.0, value)))
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def parse_account_plan(response: Mapping[str, Any]) -> Optional[str]:
+    result = response.get("result")
+    account = result.get("account") if isinstance(result, dict) else None
+    if not isinstance(account, dict) or account.get("type") != "chatgpt":
+        return None
+    plan = account.get("planType")
+    return plan if isinstance(plan, str) else None
+
+
 def parse_usage_response(response: Mapping[str, Any]) -> UsageSnapshot:
     result = _required_dict(response, "result")
 
@@ -309,6 +341,16 @@ def parse_usage_response(response: Mapping[str, Any]) -> UsageSnapshot:
     )
 
     prepaid_balance, prepaid_unlimited = parse_prepaid_credits(bucket.get("credits"))
+    five_hour = next(
+        (window for window in windows if _optional_int(window.get("windowDurationMins")) == 300),
+        None,
+    )
+    weekly = next(
+        (window for window in windows
+         if _optional_int(window.get("windowDurationMins")) >= (7 * 24 * 60) - 60),
+        None,
+    )
+    plan_type = bucket.get("planType")
     return UsageSnapshot(
         used_percent=used_percent,
         remaining_percent=100 - used_percent,
@@ -323,6 +365,11 @@ def parse_usage_response(response: Mapping[str, Any]) -> UsageSnapshot:
         measured_used_percent=measured_used_percent,
         prepaid_balance=prepaid_balance,
         prepaid_unlimited=prepaid_unlimited,
+        five_hour_remaining_percent=_optional_window_remaining(five_hour) if five_hour else None,
+        five_hour_reset_at_local=_local_time(five_hour.get("resetsAt")) if five_hour else None,
+        weekly_remaining_percent=_optional_window_remaining(weekly) if weekly else None,
+        weekly_reset_at_local=_local_time(weekly.get("resetsAt")) if weekly else None,
+        plan_type=plan_type if isinstance(plan_type, str) else None,
     )
 
 
@@ -429,6 +476,19 @@ class CodexUsageClient:
                 {"id": 2, "method": "account/rateLimits/read", "params": None},
             )
             snapshot = parse_usage_response(self._read_response(output, 2))
+            if not snapshot.plan_type:
+                # Plan detection is optional; older CLIs may lack this method.
+                # Never replace a valid weekly reading with an auth lookup error.
+                try:
+                    self._write_request(
+                        process,
+                        {"id": 3, "method": "account/read", "params": {"refreshToken": False}},
+                    )
+                    plan = parse_account_plan(self._read_response(output, 3))
+                    if plan:
+                        snapshot = dataclasses.replace(snapshot, plan_type=plan)
+                except (CodexUsageError, OSError, RuntimeError):
+                    pass
         except BaseException as exception:
             failure = exception
         finally:
