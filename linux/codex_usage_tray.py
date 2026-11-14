@@ -712,6 +712,58 @@ def write_status_icon(text: str, color: str, offline: bool) -> Tuple[Path, str]:
     return icon_root, icon_name
 
 
+
+def write_dual_status_icon(
+    short_text: str,
+    short_color: str,
+    weekly_text: str,
+    weekly_color: str,
+    offline: bool,
+) -> Tuple[Path, str]:
+    """Plus-only capsule, constrained to the square AppIndicator icon slot."""
+    icon_root = cache_directory() / "icons"
+    icon_root.mkdir(parents=True, exist_ok=True)
+    left = short_text if re.fullmatch(r"(?:[0-9]{1,3}|--)", short_text) else "--"
+    right = weekly_text if re.fullmatch(r"(?:[0-9]{1,3}|--)", weekly_text) else "--"
+    state = "offline" if offline else "online"
+    icon_name = "codex-usage-v4-dual-{}-{}-{}-{}-{}".format(
+        left, right, short_color.lstrip("#"), weekly_color.lstrip("#"), state
+    )
+    icon_path = icon_root / (icon_name + ".svg")
+    if not icon_path.exists():
+        badge = (
+            '<circle cx="55" cy="8" r="7" fill="#cf222e" '
+            'stroke="#ffffff" stroke-width="2.5"/>'
+            if offline else ""
+        )
+        svg = """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs><clipPath id="pill"><rect x="1" y="12" width="62" height="40" rx="20"/></clipPath></defs>
+  <rect x="1" y="14" width="62" height="40" rx="20" fill="#000000" fill-opacity="0.35"/>
+  <g clip-path="url(#pill)">
+    <rect x="1" y="12" width="63" height="40" fill="{short_color}"/>
+    <rect x="32" y="12" width="32" height="40" fill="{weekly_color}"/>
+  </g>
+  <rect x="1" y="12" width="62" height="40" rx="20" fill="none" stroke="#ffffff" stroke-opacity="0.86" stroke-width="1.8"/>
+  <line x1="32" y1="16" x2="32" y2="48" stroke="#ffffff" stroke-opacity="0.55"/>
+  <text x="16" y="38" fill="#ffffff" font-family="DejaVu Sans, sans-serif" font-size="{left_size}" font-weight="bold" text-anchor="middle">{left}</text>
+  <text x="48" y="38" fill="#ffffff" font-family="DejaVu Sans, sans-serif" font-size="{right_size}" font-weight="bold" text-anchor="middle">{right}</text>
+  {badge}
+</svg>
+""".format(
+            short_color=short_color,
+            weekly_color=weekly_color,
+            left_size=17 if len(left) == 3 else 21,
+            right_size=17 if len(right) == 3 else 21,
+            left=html.escape(left),
+            right=html.escape(right),
+            badge=badge,
+        )
+        temporary = icon_path.with_suffix(".svg.tmp")
+        temporary.write_text(svg, encoding="utf-8")
+        temporary.replace(icon_path)
+    return icon_root, icon_name
+
+
 def _load_indicator_dependencies():
     try:
         import gi
@@ -765,6 +817,8 @@ class TrayApplication:
             self.indicator.set_title(APP_NAME)
 
         self.menu = self.Gtk.Menu()
+        self.five_hour_item = self._disabled_item("5-hour: loading…")
+        self.five_hour_reset_item = self._disabled_item("5-hour reset: loading…")
         self.summary_item = self._disabled_item("Codex usage: loading…")
         self.reset_item = self._disabled_item("Reset time: loading…")
         self.reset_credits_item = self.Gtk.MenuItem(label="Free resets: loading…")
@@ -772,6 +826,8 @@ class TrayApplication:
         self.prepaid_credits_item = self._disabled_item("Prepaid credits: loading…")
         self.status_item = self._disabled_item("Connection: loading…")
         for item in (
+            self.five_hour_item,
+            self.five_hour_reset_item,
             self.summary_item,
             self.reset_item,
             self.reset_credits_item,
@@ -804,6 +860,8 @@ class TrayApplication:
         self.menu.append(exit_item)
 
         self.menu.show_all()
+        self.five_hour_item.hide()
+        self.five_hour_reset_item.hide()
         self.indicator.set_menu(self.menu)
         self._schedule_refresh(0.25)
 
@@ -915,9 +973,24 @@ class TrayApplication:
         self.graph_window.set_status(message, self.refresh_in_progress)
 
     def _apply_snapshot(self, snapshot: UsageSnapshot) -> None:
+        if snapshot.is_plus:
+            self.five_hour_item.set_label(
+                "5-hour: {} left".format(self._window_percent(snapshot.five_hour_remaining_percent))
+            )
+            self.five_hour_reset_item.set_label(
+                "5-hour resets " + self._format_datetime(snapshot.five_hour_reset_at_local)
+            )
+            self.five_hour_item.show()
+            self.five_hour_reset_item.show()
+        else:
+            self.five_hour_item.hide()
+            self.five_hour_reset_item.hide()
+
         self.summary_item.set_label(self._format_summary(snapshot, ""))
         self.reset_item.set_label(
-            "Resets " + self._format_datetime(snapshot.reset_at_local)
+            "Weekly resets " + self._format_datetime(snapshot.weekly_reset_at_local)
+            if snapshot.is_plus
+            else "Resets " + self._format_datetime(snapshot.reset_at_local)
             if snapshot.reset_at_local
             else "Reset time unavailable"
         )
@@ -926,27 +999,31 @@ class TrayApplication:
         self.status_item.set_label(
             "Online - updated " + snapshot.checked_at_local.strftime("%-I:%M:%S %p")
         )
-        self._replace_icon(
-            str(snapshot.remaining_percent),
-            self._usage_color(snapshot.remaining_percent),
-            False,
-        )
+        self._replace_snapshot_icon(snapshot, False)
 
     def _apply_error(self, exception: BaseException) -> None:
         if self.latest_snapshot is not None:
             snapshot = self.latest_snapshot
             self.prepaid_credits_item.set_label(format_prepaid_credits(snapshot) + " - STALE")
             self.summary_item.set_label(self._format_summary(snapshot, " - STALE"))
+            if snapshot.is_plus:
+                self.five_hour_item.set_label(
+                    "5-hour: {} left - STALE".format(
+                        self._window_percent(snapshot.five_hour_remaining_percent)
+                    )
+                )
+                self.five_hour_reset_item.set_label(
+                    "5-hour resets " + self._format_datetime(snapshot.five_hour_reset_at_local)
+                    + " - STALE"
+                )
             self.status_item.set_label(
                 "OFFLINE - showing " + snapshot.checked_at_local.strftime("%-I:%M:%S %p") + " reading"
             )
-            self._replace_icon(
-                str(snapshot.remaining_percent),
-                self._usage_color(snapshot.remaining_percent),
-                True,
-            )
+            self._replace_snapshot_icon(snapshot, True)
             return
 
+        self.five_hour_item.hide()
+        self.five_hour_reset_item.hide()
         self.summary_item.set_label("Codex usage unavailable")
         self.prepaid_credits_item.set_label(format_prepaid_credits(None))
         message = str(exception)
@@ -1002,6 +1079,33 @@ class TrayApplication:
         if offline:
             description += ", offline"
         self.indicator.set_icon_full(icon_name, description)
+
+    def _replace_snapshot_icon(self, snapshot: UsageSnapshot, offline: bool) -> None:
+        if not snapshot.is_plus:
+            self._replace_icon(
+                str(snapshot.remaining_percent),
+                self._usage_color(snapshot.remaining_percent),
+                offline,
+            )
+            return
+        five = snapshot.five_hour_remaining_percent
+        week = snapshot.weekly_remaining_percent
+        icon_root, icon_name = write_dual_status_icon(
+            str(five) if five is not None else "--",
+            self._usage_color(five) if five is not None else "#6e7781",
+            str(week) if week is not None else "--",
+            self._usage_color(week) if week is not None else "#6e7781",
+            offline,
+        )
+        self.indicator.set_icon_theme_path(str(icon_root))
+        self.indicator.set_icon_full(
+            icon_name,
+            "Codex Plus: 5-hour {}, weekly {}{}".format(
+                self._window_percent(five),
+                self._window_percent(week),
+                ", offline" if offline else "",
+            ),
+        )
 
     def _schedule_refresh(self, delay_seconds: float) -> None:
         if self.timer_source is not None:
@@ -1061,8 +1165,16 @@ class TrayApplication:
 
     @staticmethod
     def _format_summary(snapshot: UsageSnapshot, suffix: str) -> str:
+        if snapshot.is_plus:
+            return "Weekly: {} left{}".format(
+                TrayApplication._window_percent(snapshot.weekly_remaining_percent), suffix
+            )
         window = "weekly" if snapshot.is_weekly else "longest-window"
         return "Codex: {}% {} left{}".format(snapshot.remaining_percent, window, suffix)
+
+    @staticmethod
+    def _window_percent(value: Optional[int]) -> str:
+        return "{}%".format(value) if value is not None else "unavailable"
 
     @staticmethod
     def _format_datetime(value: Optional[dt.datetime]) -> str:
@@ -1100,6 +1212,12 @@ def print_live_usage() -> int:
     )
     print("Codex CLI: " + str(path))
     print("Weekly usage: {}% remaining ({}% used)".format(snapshot.remaining_percent, snapshot.used_percent))
+    if snapshot.is_plus:
+        print("5-hour usage: " + TrayApplication._window_percent(snapshot.five_hour_remaining_percent))
+        print("5-hour resets: " + (
+            snapshot.five_hour_reset_at_local.strftime("%Y-%m-%d %H:%M:%S %Z")
+            if snapshot.five_hour_reset_at_local else "unavailable"
+        ))
     print("Resets: " + reset)
     print("Free resets: " + credits)
     print(format_prepaid_credits(snapshot))
