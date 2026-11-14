@@ -31,7 +31,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, TextIO, Tuple
 
 APP_ID = "codex-usage-tray"
 APP_NAME = "Codex Usage Tray"
-APP_VERSION = "0.2.1.0"
+APP_VERSION = "0.2.2.0"
 ICON_LAYOUT_VERSION = 3
 OVERRIDE_VARIABLE = "CODEX_USAGE_TRAY_CODEX_PATH"
 RESPONSE_TIMEOUT_SECONDS = 12
